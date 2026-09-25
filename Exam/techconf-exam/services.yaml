@@ -7,3 +7,7 @@ services:
     cwd: services/event-service
     command: py -3.12 -m app
     health_path: /health
+  registration:
+    cwd: services/registration-service
+    command: py -3.12 -m app
+    health_path: /health
