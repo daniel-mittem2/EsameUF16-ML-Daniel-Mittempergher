@@ -58,6 +58,12 @@ Responsibilities implemented in T-11:
   re-validates ``end_date`` >= ``start_date`` against the merged (effective)
   record (REQ-EVT-B03); re-verifies the organizer only when ``organizer_id``
   changes; enforces the status transition (REQ-EVT-B04).
+
+Responsibilities implemented in T-12:
+
+- ``delete_event`` (T-12): removes an existing event, raising ``NOT_FOUND``
+  (404) when absent (REQ-EVT-F09). No outbound HTTP call is made — deleting an
+  event does not touch the user-service.
 """
 from __future__ import annotations
 
@@ -419,6 +425,29 @@ class EventService:
         changes["updated_at"] = utcnow_iso()
         updated = self._repo.update(event_id, changes)
         return event_to_dict(updated)
+
+    def delete_event(self, event_id: str) -> None:
+        """Delete an existing event (REQ-EVT-F09).
+
+        Deleting never contacts the user-service: no outbound HTTP call is
+        issued here (REQ-EVT-F09-AC4). A missing event (including a second
+        delete of the same id) is a ``NOT_FOUND`` (404), distinct from the
+        validation/reference 422 family used elsewhere (REQ-EVT-F09-AC2).
+
+        Args:
+            event_id: The id of the event to delete.
+
+        Raises:
+            ServiceError: ``NOT_FOUND`` (404) when no event with ``event_id``
+                exists (REQ-EVT-F09).
+        """
+        deleted = self._repo.delete(event_id)
+        if not deleted:
+            raise ServiceError(
+                errors.NOT_FOUND,
+                f"event {event_id!r} not found",
+                errors.ERROR_CODES[errors.NOT_FOUND],
+            )
 
     def _verify_organizer(self, organizer_id: str) -> dict:
         """Verify the organizer, translating transport exceptions to ServiceError.
