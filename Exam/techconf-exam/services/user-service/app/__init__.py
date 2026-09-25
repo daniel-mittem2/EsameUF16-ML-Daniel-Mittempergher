@@ -4,10 +4,10 @@ Flask-based microservice for TechConf user management.
 Import of this package must succeed without requiring the PORT
 environment variable (see REQ-USR-F13).
 
-This module exposes :func:`create_app`, the Flask application factory. In this
-task (T-03) the factory registers only the ``GET /health`` endpoint and the
-standard error handlers (400/404/405). The complete users Blueprint is
-registered in a later task (T-12), once the service layer exists.
+This module exposes :func:`create_app`, the Flask application factory. The
+factory registers the ``GET /health`` endpoint, the complete users Blueprint
+(``app.routes.users_bp``, added in T-12) and the standard error handlers
+(400/404/405).
 """
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ from flask import Flask, jsonify
 
 from app import errors
 from app.repository import AbstractUserRepository, get_repository
+from app.routes import users_bp
 
 __all__ = ["create_app"]
 
@@ -107,6 +108,7 @@ def create_app(
     app.config["REPO"] = repo
 
     _register_health(app)
+    app.register_blueprint(users_bp)
     _register_error_handlers(app)
 
     return app
