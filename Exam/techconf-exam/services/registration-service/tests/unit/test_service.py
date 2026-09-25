@@ -499,3 +499,73 @@ def test_patch_status_transition_refreshes_updated_at_REQ_REG_F10(service, repo,
     assert result["updated_at"] == new_ts
     assert result["updated_at"] != created_updated_at
     assert repo.get(record["id"])["updated_at"] == new_ts
+
+
+# --------------------------------------------------------------------------- #
+# delete_registration (REQ-REG-F07)
+# --------------------------------------------------------------------------- #
+def test_delete_registration_removes_existing_REQ_REG_F07(service, repo):
+    """delete_registration removes an existing record (REQ-REG-F07-AC1)."""
+    user_id, event_id = _ids()
+    record = _seed_confirmed(repo, user_id, event_id)
+
+    service.delete_registration(record["id"])
+
+    assert repo.get(record["id"]) is None
+
+
+def test_delete_registration_absent_maps_not_found_REQ_REG_F07(service):
+    """delete_registration on a missing id raises ServiceError NOT_FOUND (REQ-REG-F07-AC2)."""
+    with pytest.raises(ServiceError) as excinfo:
+        service.delete_registration(str(uuid.uuid4()))
+
+    assert excinfo.value.code == errors.NOT_FOUND
+
+
+# --------------------------------------------------------------------------- #
+# stats (REQ-REG-B08, REQ-REG-B09)
+# --------------------------------------------------------------------------- #
+@responses.activate
+def test_stats_returns_capacity_confirmed_available_REQ_REG_B08(service, repo):
+    """stats returns capacity (from event), confirmed (local) and available (REQ-REG-B08-AC1/AC2)."""
+    event_id = str(uuid.uuid4())
+    # Seed two confirmed and one cancelled for the same event.
+    _seed_confirmed(repo, str(uuid.uuid4()), event_id)
+    _seed_confirmed(repo, str(uuid.uuid4()), event_id)
+    cancelled = _seed_confirmed(repo, str(uuid.uuid4()), event_id)
+    repo.set_status(cancelled["id"], "cancelled", "2026-10-15T09:30:00.000000Z")
+
+    _mock_event_ok(event_id, capacity=10)
+
+    result = service.stats(event_id)
+
+    assert result == {
+        "event_id": event_id,
+        "capacity": 10,
+        "confirmed": 2,
+        "available": 8,
+    }
+
+
+@responses.activate
+def test_stats_unknown_event_maps_not_found_REQ_REG_B08(service):
+    """A 404 from event-service maps to NOT_FOUND (not REFERENCE_NOT_FOUND) (REQ-REG-B08-AC3)."""
+    event_id = str(uuid.uuid4())
+    responses.add(responses.GET, _event_url(event_id), status=404)
+
+    with pytest.raises(ServiceError) as excinfo:
+        service.stats(event_id)
+
+    assert excinfo.value.code == errors.NOT_FOUND
+
+
+@responses.activate
+def test_stats_dependency_unavailable_maps_503_REQ_REG_B08(service):
+    """A 5xx from event-service while computing stats maps to DEPENDENCY_UNAVAILABLE (REQ-REG-B08-AC5)."""
+    event_id = str(uuid.uuid4())
+    responses.add(responses.GET, _event_url(event_id), status=500)
+
+    with pytest.raises(ServiceError) as excinfo:
+        service.stats(event_id)
+
+    assert excinfo.value.code == errors.DEPENDENCY_UNAVAILABLE
