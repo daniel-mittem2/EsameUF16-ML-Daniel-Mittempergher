@@ -13,7 +13,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
 
 ---
 
-- [ ] 1. T-01 — Scaffold struttura directory e package
+- [x] 1. T-01 — Scaffold struttura directory e package
 
   - Creare la directory `Exam/techconf-exam/services/user-service/`
   - Creare `app/__init__.py` (vuoto, con docstring)
@@ -33,7 +33,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: REQ-USR-F13, REQ-USR-F14_
   _Commit: `feat(user): scaffold package structure [T-01]`_
 
-- [ ] 2. T-02 — Configurazione (`config.py`)
+- [x] 2. T-02 — Configurazione (`config.py`)
 
   - Implementare il dataclass `Config` con campi `port: int`,
     `storage_backend: str`, `data_dir: Path`
@@ -48,7 +48,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: REQ-USR-F13_
   _Commit: `feat(user): config factory and Config dataclass [T-02]`_
 
-- [ ] 3. T-04 — Moduli di supporto (`errors.py`, `pagination.py`, `models.py`)
+- [x] 3. T-04 — Moduli di supporto (`errors.py`, `pagination.py`, `models.py`)
 
   - `errors.py`: costanti codici errore (`VALIDATION_ERROR`, `NOT_FOUND`,
     `EMAIL_ALREADY_EXISTS`, `MALFORMED_JSON`, `METHOD_NOT_ALLOWED`),
@@ -69,7 +69,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: REQ-USR-F03, REQ-USR-F04, REQ-USR-F06, REQ-USR-F12_
   _Commit: `feat(user): errors, pagination, models, validators modules [T-04]`_
 
-- [ ] 4. T-05 — Repository: interfaccia astratta e backend memory
+- [x] 4. T-05 — Repository: interfaccia astratta e backend memory
 
   - Definire `AbstractUserRepository(ABC)` in `repository.py` con metodi:
     `create`, `get`, `list_all`, `update`, `delete`, `get_by_email`
@@ -86,7 +86,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: REQ-USR-F14, REQ-USR-B01 (concorrenza)_
   _Commit: `feat(user): repository ABC, EmailAlreadyExistsError, MemoryUserRepository [T-05]`_
 
-- [ ] 5. T-06 — Backend JSON
+- [x] 5. T-06 — Backend JSON
 
   - Implementare `JsonUserRepository(AbstractUserRepository)`:
     - legge `users.json` all'apertura (crea lista vuota se il file non esiste)
@@ -100,7 +100,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: REQ-USR-F14 (json backend), REQ-USR-B01 (lock)_
   _Commit: `feat(user): JsonUserRepository with atomic writes and RLock [T-06]`_
 
-- [ ] 6. T-07 — Backend SQLite
+- [x] 6. T-07 — Backend SQLite
 
   - Implementare `SqliteUserRepository(AbstractUserRepository)`:
     - `CREATE TABLE IF NOT EXISTS users (...)` con `UNIQUE INDEX LOWER(email)`
@@ -115,7 +115,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: REQ-USR-F14 (sqlite backend), REQ-USR-B01 (IntegrityError)_
   _Commit: `feat(user): SqliteUserRepository with shared connection and RLock [T-07]`_
 
-- [ ] 7. T-03 — Health endpoint e application factory
+- [x] 7. T-03 — Health endpoint e application factory
 
   - Implementare `create_app(repo=None, config=None) -> Flask` in `app/__init__.py`
   - Registrare la rotta `GET /health` → `{"status": "ok", "service": "user-service"}`
@@ -127,7 +127,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: REQ-USR-F01, REQ-USR-F10, REQ-USR-F12, REQ-USR-F13_
   _Commit: `feat(user): health endpoint and app factory [T-03]`_
 
-- [ ] 8. T-08 — UserService: create e regole B01/B02
+- [x] 8. T-08 — UserService: create e regole B01/B02
 
   - Implementare `UserService.__init__(self, repo)`
   - Implementare `UserService.create_user(data) -> dict`:
@@ -144,7 +144,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: REQ-USR-F02, REQ-USR-B01, REQ-USR-B02, REQ-USR-F11_
   _Commit: `feat(user): UserService.create_user with email normalisation [T-08]`_
 
-- [ ] 9. T-09 — UserService: get, list e filtri B03
+- [x] 9. T-09 — UserService: get, list e filtri B03
 
   - Implementare `UserService.get_user(user_id) -> dict` (404 se mancante)
   - Implementare `UserService.list_users(filters, page, page_size) -> dict`:
@@ -158,7 +158,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: REQ-USR-F05, REQ-USR-F06, REQ-USR-B03_
   _Commit: `feat(user): UserService.get_user and list_users with filters [T-09]`_
 
-- [ ] 10. T-10 — UserService: replace (PUT) e update (PATCH)
+- [x] 10. T-10 — UserService: replace (PUT) e update (PATCH)
 
   - Implementare `UserService.replace_user(user_id, data) -> dict` (PUT):
     - 404 se non trovato
@@ -179,7 +179,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: REQ-USR-F07, REQ-USR-F08, REQ-USR-B01, REQ-USR-B02, REQ-USR-F11_
   _Commit: `feat(user): UserService.replace_user and update_user [T-10]`_
 
-- [ ] 11. T-11 — UserService: delete
+- [x] 11. T-11 — UserService: delete
 
   - Implementare `UserService.delete_user(user_id) -> None`:
     - 404 se non trovato
@@ -190,7 +190,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: REQ-USR-F09_
   _Commit: `feat(user): UserService.delete_user [T-11]`_
 
-- [ ] 12. T-12 — Routes HTTP complete
+- [x] 12. T-12 — Routes HTTP complete
 
   - Implementare tutte le rotte in `routes.py` come Blueprint:
     - `POST /api/v1/users` → 201 + `Location` header + body `User`
@@ -212,7 +212,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: REQ-USR-F02..F12_
   _Commit: `feat(user): all HTTP routes in Blueprint [T-12]`_
 
-- [ ] 13. T-13 — Test unitari completi (`tests/unit/`)
+- [x] 13. T-13 — Test unitari completi (`tests/unit/`)
 
   - `test_routes.py`: test Flask test client per tutti gli endpoint
     (inclusi casi 400/404/405/409/422 per ogni vincolo); usa `flask_to_contract_dict`
@@ -237,7 +237,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: REQ-USR-T01_
   _Commit: `test(user): full unit test suite with ≥80% coverage [T-13]`_
 
-- [ ] 14. T-14 — `services.yaml` e preparazione ambiente
+- [x] 14. T-14 — `services.yaml` e preparazione ambiente
 
   - Creare (o aggiornare) `Exam/techconf-exam/services.yaml` dichiarando
     **solo** `user`:
@@ -257,7 +257,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: REQ-USR-F13, REQ-USR-F14_
   _Commit: `feat(user): services.yaml with user service declaration [T-14]`_
 
-- [ ] 15. T-15 — Test di integrazione propri (`tests/integration/`)
+- [x] 15. T-15 — Test di integrazione propri (`tests/integration/`)
 
   - Implementare `test_user_integration.py` con fixture `live_server`:
     - avvia `py -3.12 -m app` come sottoprocesso con `PORT` libera e
@@ -273,7 +273,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: REQ-USR-T01-AC6_
   _Commit: `test(user): own integration tests with real subprocess [T-15]`_
 
-- [ ] 16. T-16 — Collaudo con suite del docente (solo user) e verifica checksum
+- [x] 16. T-16 — Collaudo con suite del docente (solo user) e verifica checksum
 
   - Installare dipendenze della suite:
     `py -3.12 -m pip install -r Exam/techconf-exam/tests/integration/requirements.txt`
@@ -289,7 +289,7 @@ T-01 prepara anche le dipendenze. T-03 segue moduli di supporto e backend, quind
   _Requirements: tutti REQ-USR-*_
   _Commit: `docs(user): acceptance test output collaudo_user.txt [T-16]`_
 
-- [ ] 17. T-17 — `README.md` del servizio
+- [x] 17. T-17 — `README.md` del servizio
 
   - Creare `Exam/techconf-exam/services/user-service/README.md` con:
     - come installare le dipendenze
