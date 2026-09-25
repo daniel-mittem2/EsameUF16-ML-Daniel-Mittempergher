@@ -27,6 +27,17 @@ Responsibilities implemented in T-09:
   maps the dependency's transport failures to 503 (REQ-EVT-B05), applies the
   ``status`` default, generates the UUID and timestamps
   (REQ-EVT-F02, REQ-EVT-F11) and persists the record.
+
+Responsibilities implemented in T-10:
+
+- ``get_event`` (T-10): retrieves a single event by id, raising ``NOT_FOUND``
+  (404) when absent (REQ-EVT-F05). No outbound HTTP call is made — reading an
+  event does not touch the user-service.
+- ``list_events`` (T-10): validates the optional ``status`` filter against the
+  contract enum (invalid value -> ``VALIDATION_ERROR`` 422), delegates the
+  ``status``/``city`` AND filtering to the repository (REQ-EVT-B06), and applies
+  pagination via :func:`app.pagination.paginate` so ``total`` is the post-filter
+  pre-pagination count (REQ-EVT-F06).
 """
 from __future__ import annotations
 
@@ -38,8 +49,9 @@ from app.http_client import (
     UserServiceClient,
 )
 from app.models import event_to_dict, new_event_record, utcnow_iso
+from app.pagination import paginate
 from app.repository import AbstractEventRepository
-from app.validators import validate_dates_coherent
+from app.validators import VALID_STATUSES, validate_dates_coherent
 
 
 class ServiceError(Exception):
@@ -119,6 +131,74 @@ class EventService:
         record = new_event_record(data, now)  # status default + UUID + timestamps
         stored = self._repo.create(record)
         return event_to_dict(stored)
+
+    def get_event(self, event_id: str) -> dict:
+        """Return a single event serialised to the contract shape (REQ-EVT-F05).
+
+        Reading an event never contacts the user-service: no outbound HTTP call
+        is issued here (REQ-EVT-F05). A missing event is a ``NOT_FOUND`` (404),
+        distinct from the reference/validation 422 family used elsewhere.
+
+        Args:
+            event_id: The id of the event to retrieve.
+
+        Returns:
+            The stored event record serialised to the 13 contract ``Event``
+            fields.
+
+        Raises:
+            ServiceError: ``NOT_FOUND`` (404) when no event with ``event_id``
+                exists (REQ-EVT-F05).
+        """
+        record = self._repo.get(event_id)
+        if record is None:
+            raise ServiceError(
+                errors.NOT_FOUND,
+                f"event {event_id!r} not found",
+                errors.ERROR_CODES[errors.NOT_FOUND],
+            )
+        return event_to_dict(record)
+
+    def list_events(self, filters: dict, page: int, page_size: int) -> dict:
+        """Return a paginated ``EventPage`` of events matching ``filters``.
+
+        The optional ``status``/``city`` filters are combined with AND logic by
+        the repository (REQ-EVT-B06); ``city`` is a free-string exact match while
+        ``status`` must be one of the contract enum values. An unrecognised
+        ``status`` filter value is a ``VALIDATION_ERROR`` (422) rather than an
+        empty result, so a client typo is surfaced explicitly (REQ-EVT-B06-AC2).
+
+        ``total`` reflects the number of records after filtering but before
+        slicing (post-filter, pre-pagination); pagination is applied by
+        :func:`app.pagination.paginate`, so a page beyond the last returns an
+        empty ``items`` list with the correct ``total`` (REQ-EVT-F06).
+
+        Args:
+            filters: Optional filter dict with ``status`` and/or ``city`` keys;
+                values of ``None`` (or absent keys) impose no constraint.
+            page: 1-based page number (already validated by the routes layer).
+            page_size: Page size (already validated by the routes layer).
+
+        Returns:
+            An ``EventPage`` dict: ``items`` (each serialised via
+            :func:`app.models.event_to_dict`), ``page``, ``page_size`` and
+            ``total``.
+
+        Raises:
+            ServiceError: ``VALIDATION_ERROR`` (422) when the ``status`` filter
+                value is not one of the contract enum values (REQ-EVT-B06-AC2).
+        """
+        status = filters.get("status")
+        if status is not None and status not in VALID_STATUSES:
+            raise ServiceError(
+                errors.VALIDATION_ERROR,
+                "status must be one of draft, published, cancelled",
+                errors.ERROR_CODES[errors.VALIDATION_ERROR],
+            )
+
+        records = self._repo.list_all(filters)
+        items = [event_to_dict(record) for record in records]
+        return paginate(items, page, page_size)
 
     def _verify_organizer(self, organizer_id: str) -> dict:
         """Verify the organizer, translating transport exceptions to ServiceError.

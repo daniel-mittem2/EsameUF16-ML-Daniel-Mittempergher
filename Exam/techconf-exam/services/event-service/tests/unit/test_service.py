@@ -273,3 +273,160 @@ def test_service_error_carries_code_status_message():
     assert err.status == 422
     assert err.message == "bad"
     assert str(err) == "bad"
+
+
+# =========================================================================== #
+# T-10 — get_event, list_events and filters (B06)
+# =========================================================================== #
+def _seed_record(status: str, city: str) -> dict:
+    """Build a stored event record directly (no HTTP), for list/get tests."""
+    event_id = str(uuid.uuid4())
+    return {
+        "id": event_id,
+        "title": "Seeded Event",
+        "description": None,
+        "organizer_id": str(uuid.uuid4()),
+        "venue": "Main Hall",
+        "city": city,
+        "start_date": "2026-10-15",
+        "end_date": "2026-10-17",
+        "capacity": 100,
+        "price": 49.9,
+        "status": status,
+        "created_at": "2026-10-15T09:30:00.000000Z",
+        "updated_at": "2026-10-15T09:30:00.000000Z",
+    }
+
+
+# --------------------------------------------------------------------------- #
+# get_event (REQ-EVT-F05)
+# --------------------------------------------------------------------------- #
+def test_get_event_returns_contract_shape_when_present(svc, repo):
+    """REQ-EVT-F05: get_event returns the stored event as the 13 contract fields."""
+    record = _seed_record("draft", "Rome")
+    repo.create(record)
+
+    result = svc.get_event(record["id"])
+
+    assert set(result.keys()) == {
+        "id", "title", "description", "organizer_id", "venue", "city",
+        "start_date", "end_date", "capacity", "price", "status",
+        "created_at", "updated_at",
+    }
+    assert result["id"] == record["id"]
+    assert result["status"] == "draft"
+
+
+def test_get_event_absent_raises_not_found_404(svc):
+    """REQ-EVT-F05: an unknown id raises NOT_FOUND (404)."""
+    with pytest.raises(ServiceError) as exc_info:
+        svc.get_event(str(uuid.uuid4()))
+
+    assert exc_info.value.code == errors.NOT_FOUND
+    assert exc_info.value.status == 404
+
+
+@responses.activate
+def test_get_event_makes_no_http_call(svc, repo):
+    """REQ-EVT-F05: reading an event never contacts the user-service."""
+    record = _seed_record("published", "Milan")
+    repo.create(record)
+
+    svc.get_event(record["id"])
+
+    assert len(responses.calls) == 0
+
+
+# --------------------------------------------------------------------------- #
+# list_events — combined filters + correct total (REQ-EVT-F06, REQ-EVT-B06)
+# --------------------------------------------------------------------------- #
+def test_list_events_combined_status_and_city_filters_and_total(svc, repo):
+    """REQ-EVT-B06: status AND city filters combine; total is post-filter count."""
+    repo.create(_seed_record("published", "Rome"))
+    repo.create(_seed_record("published", "Rome"))
+    repo.create(_seed_record("draft", "Rome"))
+    repo.create(_seed_record("published", "Milan"))
+
+    result = svc.list_events({"status": "published", "city": "Rome"}, page=1, page_size=20)
+
+    # Only the two published/Rome records match the AND filter.
+    assert result["total"] == 2
+    assert len(result["items"]) == 2
+    assert all(item["status"] == "published" and item["city"] == "Rome" for item in result["items"])
+
+
+def test_list_events_no_filters_returns_all(svc, repo):
+    """REQ-EVT-F05: an empty filter dict returns every event."""
+    for _ in range(3):
+        repo.create(_seed_record("draft", "Rome"))
+
+    result = svc.list_events({}, page=1, page_size=20)
+
+    assert result["total"] == 3
+    assert len(result["items"]) == 3
+    assert result["page"] == 1
+    assert result["page_size"] == 20
+
+
+def test_list_events_items_have_contract_shape(svc, repo):
+    """REQ-EVT-F05: listed items are serialised to the 13 contract fields."""
+    repo.create(_seed_record("draft", "Rome"))
+
+    result = svc.list_events({}, page=1, page_size=20)
+
+    assert set(result["items"][0].keys()) == {
+        "id", "title", "description", "organizer_id", "venue", "city",
+        "start_date", "end_date", "capacity", "price", "status",
+        "created_at", "updated_at",
+    }
+
+
+# --------------------------------------------------------------------------- #
+# list_events — invalid status filter -> VALIDATION_ERROR (422) (REQ-EVT-B06)
+# --------------------------------------------------------------------------- #
+def test_list_events_invalid_status_filter_raises_validation_error(svc, repo):
+    """REQ-EVT-B06: an unrecognised status filter value maps to VALIDATION_ERROR (422)."""
+    repo.create(_seed_record("draft", "Rome"))
+
+    with pytest.raises(ServiceError) as exc_info:
+        svc.list_events({"status": "archived"}, page=1, page_size=20)
+
+    assert exc_info.value.code == errors.VALIDATION_ERROR
+    assert exc_info.value.status == 422
+
+
+def test_list_events_none_status_filter_is_not_validated(svc, repo):
+    """REQ-EVT-B06: a status filter of None imposes no constraint (returns all)."""
+    repo.create(_seed_record("draft", "Rome"))
+    repo.create(_seed_record("published", "Rome"))
+
+    result = svc.list_events({"status": None, "city": None}, page=1, page_size=20)
+
+    assert result["total"] == 2
+
+
+# --------------------------------------------------------------------------- #
+# list_events — page beyond the last -> empty items (REQ-EVT-F06)
+# --------------------------------------------------------------------------- #
+def test_list_events_page_beyond_last_returns_empty_items_with_total(svc, repo):
+    """REQ-EVT-F06: a page past the end returns empty items but the correct total."""
+    for _ in range(3):
+        repo.create(_seed_record("draft", "Rome"))
+
+    result = svc.list_events({}, page=2, page_size=20)
+
+    assert result["items"] == []
+    assert result["total"] == 3
+    assert result["page"] == 2
+    assert result["page_size"] == 20
+
+
+def test_list_events_pagination_slices_within_total(svc, repo):
+    """REQ-EVT-F06: total is pre-pagination; a full page returns page_size items."""
+    for _ in range(5):
+        repo.create(_seed_record("draft", "Rome"))
+
+    result = svc.list_events({}, page=1, page_size=2)
+
+    assert len(result["items"]) == 2
+    assert result["total"] == 5
