@@ -123,3 +123,24 @@ Consegna §6.5: **2 bug reali**, entrambi di **implementazione** (requisito: ≥
 2. Sostituire `<ISSUE #TBD by user>` con i numeri reali qui sopra.
 3. Creare i commit di fix con i messaggi indicati, includendo `(closes #N)` con il
    numero di issue corrispondente; poi merge su `main`.
+
+---
+
+## Testo delle issue pronto per la pubblicazione
+
+Il testo completo e definitivo delle due issue è disponibile in:
+
+- `.github/ISSUES/BUG-001.md` — MemoryRegistrationRepository returns internal references
+- `.github/ISSUES/BUG-002.md` — validate_date accepts ISO week-date strings
+
+**Procedura di chiusura (richiede il browser, `gh` non disponibile):**
+
+1. Aprire le 2 issue su https://github.com/daniel-mittem2/EsameUF16-ML-Daniel-Mittempergher
+   incollando il contenuto dei file sopra.
+2. Sostituire i segnaposto `<ISSUE #TBD by user>` in questo file con i numeri reali.
+3. Il fix è già presente nel commit `a418e86`. Per collegare formalmente l''issue,
+   creare un commit di riferimento con messaggio `fix(<svc>): ... (closes #N)`
+   (oppure chiudere l''issue citando `a418e86`).
+
+Finché le issue non sono pubblicate, i bug risultano **documentati e corretti in codice
+con test di regressione**, ma **non ancora chiusi formalmente** ai sensi del workflow §6.5.
