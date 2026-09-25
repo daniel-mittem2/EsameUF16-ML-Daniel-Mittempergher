@@ -36,9 +36,9 @@ nell'implementazione: basta restituire `null` e non `""` quando company è assen
 ```
 services/user-service/
   app/
-    __init__.py          # create_app(config=None) — Flask application factory
-    __main__.py          # entry point: legge config.PORT, chiama create_app(), avvia server
-    config.py            # legge os.environ UNA SOLA VOLTA, espone costanti tipizzate
+    __init__.py          # create_app(repo=None, config=None) — Flask application factory
+    __main__.py          # entry point: chiama load_config(), poi create_app(config=cfg)
+    config.py            # load_config() → Config dataclass; legge os.environ; PORT validata solo all'avvio
     routes.py            # Blueprint Flask: parsing, validazione HTTP, serializzazione
     service.py           # UserService: regole di business REQ-USR-B*, orchestrazione
     repository.py        # AbstractUserRepository (ABC) + helper get_repository()
@@ -71,58 +71,107 @@ servizi (REQ-USR-F14, nota ambiguità).
 
 ### `config.py`
 
-Legge `os.environ` una sola volta all'import. Espone costanti:
+Espone una funzione `load_config()` che legge `os.environ` e restituisce un
+oggetto `Config` con i valori tipizzati. La funzione viene chiamata **una sola
+volta** all'avvio del server in `__main__.py`; nei test il Config viene costruito
+direttamente o tramite `monkeypatch` prima di chiamare `create_app`.
 
 ```python
-PORT: int           # da PORT (obbligatorio — ValueError se assente o non intero)
-STORAGE_BACKEND: str  # "memory" | "json" | "sqlite", default "memory"
-DATA_DIR: Path      # da DATA_DIR, default Path("./data")
+from dataclasses import dataclass
+from pathlib import Path
+import os
+
+@dataclass
+class Config:
+    port: int            # obbligatorio solo quando si avvia il server
+    storage_backend: str # "memory" | "json" | "sqlite", default "memory"
+    data_dir: Path       # default Path("./data")
+
+_SENTINEL = object()
+
+def load_config(port=_SENTINEL) -> Config:
+    raw_port = port if port is not _SENTINEL else os.environ.get("PORT")
+    if raw_port is None:
+        raise ValueError("PORT environment variable is required to start the server")
+    return Config(
+        port=int(raw_port),
+        storage_backend=os.environ.get("STORAGE_BACKEND", "memory"),
+        data_dir=Path(os.environ.get("DATA_DIR", "./data")),
+    )
 ```
 
-Nessun altro modulo chiama `os.environ` direttamente. I test unitari impostano
-i valori iniettando `monkeypatch.setenv` **prima** dell'import del modulo, oppure
-usando `importlib.reload(config)` dopo aver modificato le variabili.
-
-### `__init__.py` — Application factory
+`create_app(repo=None, config=None)` accetta un `Config` opzionale. Se `config`
+è `None` e non è necessario il `PORT` (il server non viene avviato), la factory
+usa valori di default sicuri per `STORAGE_BACKEND` e `DATA_DIR`. **L'import del
+package `app` non valida né legge `PORT`**: questo consente ai test unitari di
+importare i moduli del servizio senza impostare variabili d'ambiente.
 
 ```python
-def create_app(repo=None) -> Flask:
+def create_app(repo=None, config=None) -> Flask:
     app = Flask(__name__)
     if repo is None:
-        repo = get_repository()   # legge config.STORAGE_BACKEND
+        backend = (config.storage_backend if config else
+                   os.environ.get("STORAGE_BACKEND", "memory"))
+        data_dir = (config.data_dir if config else
+                    Path(os.environ.get("DATA_DIR", "./data")))
+        repo = get_repository(backend, data_dir)
     app.config["REPO"] = repo
     app.register_blueprint(users_bp)
     register_error_handlers(app)
     return app
 ```
 
-La factory accetta un `repo` opzionale: i test unitari iniettano un repository
-fittizio (o uno dei backend reali su `tmp_path`) senza leggere variabili
-d'ambiente né avviare un server.
+Nessun altro modulo chiama `os.environ` direttamente eccetto `config.py`.
+
+### `__init__.py` — Application factory
+
+```python
+def create_app(repo=None, config=None) -> Flask:
+    app = Flask(__name__)
+    if repo is None:
+        backend = (config.storage_backend if config else
+                   os.environ.get("STORAGE_BACKEND", "memory"))
+        data_dir = (config.data_dir if config else
+                    Path(os.environ.get("DATA_DIR", "./data")))
+        repo = get_repository(backend, data_dir)
+    app.config["REPO"] = repo
+    app.register_blueprint(users_bp)
+    register_error_handlers(app)
+    return app
+```
+
+La factory accetta un `repo` opzionale (per i test) e un `config` opzionale
+(per la produzione). Non richiede che `PORT` sia impostata: il server può essere
+creato e testato senza variabili d'ambiente.
 
 **Distinzione avvio server / creazione app nei test:**
 
 | Contesto | Come si usa `create_app` |
 |---|---|
-| Produzione / suite | `__main__.py` chiama `create_app()` poi `app.run(...)` |
-| Test unitari | `client = create_app(repo=FakeRepo()).test_client()` |
-| Test di integrazione propri | sottoprocesso reale su porta libera |
+| Produzione / suite | `__main__.py` chiama `create_app(config=load_config())` poi `app.run(...)` |
+| Test unitari | `create_app(repo=MemoryUserRepository()).test_client()` — nessun env richiesto |
+| Test di integrazione propri | sottoprocesso reale su porta libera, con `PORT` iniettata |
 
 ### `__main__.py`
 
 ```python
-from app import config, create_app
+from app.config import load_config
+from app import create_app
 
-app = create_app()
-app.run(host="0.0.0.0", port=config.PORT, debug=False)
+cfg = load_config()               # valida PORT qui — errore esplicito se mancante
+application = create_app(config=cfg)
+application.run(host="0.0.0.0", port=cfg.port, debug=False)
 ```
 
-Non legge mai `os.environ` direttamente. Compatibile con `python -m app` dal
-`cwd` del servizio (come richiesto da `services.yaml`).
+Non legge mai `os.environ` direttamente. `load_config()` valida `PORT` e termina
+con `ValueError` se assente — l'errore avviene all'avvio del server, non all'import
+del package. Compatibile con `python -m app` dal `cwd` del servizio.
 
-**Avvio Windows:** il `services.yaml` usa `command: python -m app`; la suite
-inietta la variabile `PORT` prima del lancio. In sviluppo locale si usa
-`py -3.12 -m app` dalla directory del servizio con `PORT=5001` impostata.
+**Avvio Windows in sviluppo:**
+```powershell
+$env:PORT = "5001"; $env:STORAGE_BACKEND = "memory"
+py -3.12 -m app
+```
 
 ### `routes.py`
 
@@ -272,12 +321,17 @@ layer:
 5. aggiorna `updated_at` al timestamp corrente
 
 **PATCH** usa lo schema `UserUpdate` (tutti opzionali). Il service layer:
-1. verifica che il body sia un dict (422 se non lo è)
-2. filtra i campi presenti nel body (ignora chiavi non previste — sono già 422
-   per `additionalProperties: false`)
+1. recupera il record esistente — **per primo**, anche se il body è `{}`; se non
+   trovato risponde 404 (REQ-USR-F08-AC2)
+2. valida il body: deve essere un dict (422 se non lo è); rifiuta esplicitamente
+   qualsiasi chiave non presente in `UserUpdate` — `additionalProperties: false`
+   nel contratto **non** applica la validazione automaticamente, deve essere
+   implementata in `validators.py`
 3. **se il body è `{}` (nessun campo)**: ritorna il record invariato, `updated_at`
    non aggiornato (REQ-USR-F04-AC4)
-4. altrimenti: applica solo i campi presenti, aggiorna `updated_at`
+4. altrimenti: valida i valori dei campi presenti, normalizza email se presente,
+   controlla unicità email (REQ-USR-B01), applica solo i campi presenti, aggiorna
+   `updated_at`
 
 ---
 
@@ -312,13 +366,34 @@ non è JSON valido (`request.get_json(force=True, silent=False)`).
 from datetime import datetime, timezone
 
 def utcnow_iso() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    """ISO 8601 UTC con precisione al microsecondo, suffisso Z."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 ```
 
-- Generato dal server all'atto della creazione/modifica
-- Formato `Z` finale (es. `2026-10-15T09:30:00Z`)
-- `created_at` salvato nel record e mai sovrascritto
+- Formato: `2026-10-15T09:30:00.123456Z` — precisione al microsecondo
+- Il microsecondo garantisce che due operazioni consecutive (es. create + update
+  nella stessa funzione di test) producano timestamp distinti senza attese artificiali
+- `created_at` salvato nel record e mai sovrascritto nelle operazioni PUT/PATCH
 - `updated_at` aggiornato in PUT e in PATCH non-vuoto; invariato per PATCH `{}`
+
+**Test con orologio controllabile:**
+I test che verificano il comportamento di `updated_at` iniettano la funzione
+`utcnow_iso` via parametro o `monkeypatch`:
+
+```python
+def test_put_refreshes_updated_at(monkeypatch):
+    calls = iter(["2026-01-01T00:00:00.000000Z", "2026-01-02T00:00:00.000000Z"])
+    monkeypatch.setattr("app.service.utcnow_iso", lambda: next(calls))
+    svc = UserService(MemoryUserRepository())
+    user = svc.create_user({"first_name": "A", "last_name": "B",
+                             "email": "a@b.com"})
+    updated = svc.replace_user(user["id"], {"first_name": "C", "last_name": "D",
+                                             "email": "a@b.com"})
+    assert updated["created_at"] == "2026-01-01T00:00:00.000000Z"
+    assert updated["updated_at"] == "2026-01-02T00:00:00.000000Z"
+```
+
+Nessuna `time.sleep()` nei test.
 
 ---
 
@@ -401,21 +476,23 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lower ON users (LOWER(email));
   `IntegrityError` viene catturato nel backend e rilancia `EmailAlreadyExistsError`
 - **transazioni**: ogni write usa un `with conn:` per commit automatico o rollback
   in caso di eccezione
-- `DATA_DIR/users.db` — esclusa da git tramite `.gitignore` (`*.sqlite`)
+- `DATA_DIR/users.db` — escluso da git tramite la directory `data/` nel
+  `.gitignore` di `Exam/techconf-exam/` (già presente nel template). Il pattern
+  `*.sqlite` nel `.gitignore` radice coprirebbe solo i file nella root; l'esclusione
+  effettiva è garantita dalla regola `data/` che esclude l'intera directory.
 
 ### `get_repository()` factory
 
 ```python
-def get_repository() -> AbstractUserRepository:
-    backend = config.STORAGE_BACKEND
+def get_repository(backend: str, data_dir: Path) -> AbstractUserRepository:
     if backend == "memory":
         return MemoryUserRepository()
     elif backend == "json":
-        config.DATA_DIR.mkdir(parents=True, exist_ok=True)
-        return JsonUserRepository(config.DATA_DIR / "users.json")
+        data_dir.mkdir(parents=True, exist_ok=True)
+        return JsonUserRepository(data_dir / "users.json")
     elif backend == "sqlite":
-        config.DATA_DIR.mkdir(parents=True, exist_ok=True)
-        return SqliteUserRepository(config.DATA_DIR / "users.db")
+        data_dir.mkdir(parents=True, exist_ok=True)
+        return SqliteUserRepository(data_dir / "users.db")
     raise ValueError(f"Unknown STORAGE_BACKEND: {backend!r}")
 ```
 
@@ -423,57 +500,97 @@ def get_repository() -> AbstractUserRepository:
 
 ## 10. Protezione unicità email con richieste concorrenti
 
-La regola REQ-USR-B01 (email univoca) richiede un controllo prima della scrittura.
-In un ambiente concorrente, due richieste simultane potrebbero passare entrambe il
-controllo e poi scrivere, violando l'unicità.
+Flask `app.run()` usa `threaded=True` per default dalla versione 1.0: le richieste
+vengono servite in thread concorrenti sullo stesso processo. Dichiarare i backend
+`memory` o `json` "sicuri perché single-threaded" è quindi **errato**.
 
-**Strategia scelta: le regole di business rimangono nel service layer** (in linea
-con gli steering). La protezione effettiva è delegata al backend:
+**Strategia: lock condiviso per istanza di repository.**
 
-- **memory**: single-threaded in Flask dev server — nessun race condition reale
-- **json**: `os.replace()` atomico protegge la scrittura; il check-then-write
-  rimane vulnerabile a race condition multi-thread teoriche, ma il Flask dev server
-  è single-threaded per default. Se necessario, si aggiunge un `threading.Lock()`
-  nel `JsonUserRepository` senza toccare `service.py`.
-- **sqlite**: il vincolo `UNIQUE INDEX` sul DB garantisce atomicità; l'`IntegrityError`
-  viene intercettato nel backend e propagato come `EmailAlreadyExistsError` al
-  service layer, che lo converte in 409.
+Ogni istanza di repository mantiene un `threading.RLock()` creato nel proprio
+`__init__`. L'intera operazione "verifica unicità + scrittura" avviene **dentro
+il lock**, garantendo atomicità a livello di processo:
 
-In tutti i casi il service layer esegue `get_by_email` prima di `create`/`update`:
-questa doppia verifica (controllo esplicito + vincolo DB) garantisce messaggi di
-errore coerenti in tutti i backend.
+```python
+class MemoryUserRepository(AbstractUserRepository):
+    def __init__(self):
+        self._data: dict[str, dict] = {}
+        self._lock = threading.RLock()
+
+    def create(self, record: dict) -> dict:
+        with self._lock:
+            # check + write atomici
+            if self.get_by_email_unlocked(record["email"]):
+                raise EmailAlreadyExistsError()
+            self._data[record["id"]] = record
+            return record
+```
+
+La stessa struttura si applica a `JsonUserRepository` e `SqliteUserRepository`.
+
+**Memory e Json:** il lock in-process protegge completamente le operazioni
+concorrenti all'interno di un singolo processo. La suite di collaudo avvia un
+processo per istanza di servizio: **non è previsto né promesso coordinamento
+tra processi distinti sullo stesso file JSON**. Se due istanze parallele
+puntassero allo stesso `users.json`, le scritture potrebbero corruggere il file;
+questo scenario è fuori scope per l'esame.
+
+**Json — `os.replace()`:** è atomico a livello di filesystem (impedisce file
+parziali in caso di crash), ma non rende atomico il check-then-write se ci fossero
+processi multipli. Con il lock in-process e un solo processo per servizio, la
+protezione è completa per il caso d'uso dell'esame.
+
+**SQLite:** il lock in-process coordina le operazioni prima che tocchino SQLite.
+La connessione è **condivisa** tra thread (`check_same_thread=False`). SQLite
+serializza le scritture a livello di file grazie al journal mode WAL o DELETE;
+il vincolo `UNIQUE INDEX LOWER(email)` cattura eventuali duplicati residui e
+`IntegrityError` viene propagato come `EmailAlreadyExistsError`. Ogni write
+usa `with conn:` per commit/rollback automatico.
+
+In alternativa è possibile aprire una **connessione distinta per thread**
+(`threading.local()`) con `isolation_level=None` (autocommit) e
+`BEGIN EXCLUSIVE` esplicito per le sezioni critiche; questa variante è più
+robusta ma più complessa. La scelta tra le due va documentata in design.md
+del servizio prima dell'implementazione — il task T-05 la richiede esplicitamente.
+
+**Le regole di business rimangono in `service.py`:** il lock vive nel repository,
+non nel service layer. `service.py` chiama `repo.create(record)` e cattura
+`EmailAlreadyExistsError` per convertirla in 409. Non c'è logica di
+sincronizzazione fuori dal repository.
 
 ---
 
 ## 11. Adattamento della risposta per `assert_matches_contract`
 
 Il `validator.py` accetta sia `requests.Response` che un dizionario con chiavi
-`status_code`, `headers`, `json`. Il Flask test client restituisce un
-`flask.testing.FlaskClient` response che espone `status_code`, `headers` e `.json`
-come proprietà/metodi.
+`status_code`, `headers`, `json`. Il ramo dizionario di `_extract()` in
+`validator.py` usa direttamente `response.get("json", None)` senza chiamare
+`.json()` come metodo, quindi non richiede che l'oggetto sia callable.
 
-Il validator chiama `response.json()` come metodo. Flask `Response` espone
-`.get_json()` e `.json` come property, ma **non** `.json()` come callable. Si
-risolve con un wrapper leggero nei test:
+Il Flask test client restituisce un response che non espone `.json()` come metodo
+callable (espone `.get_json()` e `.json` come property). Il wrapper `FlaskResponseAdapter`
+precedentemente proposto non esponeva `.text`, causando la lettura del body come `None`
+nel validator. La soluzione corretta è costruire il dizionario direttamente:
 
 ```python
-class FlaskResponseAdapter:
-    """Wraps flask.testing.FlaskClient response to match requests.Response API."""
-    def __init__(self, resp):
-        self._resp = resp
-        self.status_code = resp.status_code
-        self.headers = dict(resp.headers)
-
-    def json(self):
-        return self._resp.get_json(force=True)
+def flask_to_contract_dict(resp) -> dict:
+    """Converte una Flask test response nel dict accettato da assert_matches_contract."""
+    return {
+        "status_code": resp.status_code,
+        "headers": dict(resp.headers),
+        "json": resp.get_json(silent=True),
+    }
 ```
 
 Uso nei test di contratto:
 ```python
 resp = client.post("/api/v1/users", json=payload)
 assert_matches_contract("user", "POST", "/api/v1/users",
-                         FlaskResponseAdapter(resp))
+                         flask_to_contract_dict(resp))
 ```
+
+`resp.get_json(silent=True)` ritorna `None` se il body non è JSON (es. DELETE 204),
+che è il comportamento corretto: il validator gestisce `None` body per i 204
+restituendo senza errore (il `_response_schema` ritorna `None` per 204).
 
 `validator.py` non viene modificato.
 
@@ -501,11 +618,11 @@ singola operazione. La strategia:
 
 ### Test unitari (`tests/unit/`)
 
-**`test_routes.py`** — usa `create_app(repo=FakeRepo()).test_client()`:
+**`test_routes.py`** — usa `create_app(repo=MemoryUserRepository()).test_client()`:
 - testa ogni endpoint (7 operazioni + /health) con Flask test client
 - verifica status code, header `Location` su POST, body JSON
 - testa casi di errore: 400 malformed, 404, 409, 422 per ogni vincolo
-- usa `FlaskResponseAdapter` per i test di contratto
+- usa `flask_to_contract_dict()` per i test di contratto
 
 **`test_service.py`** — testa `UserService` con `MemoryUserRepository`:
 - verifica ogni regola REQ-USR-B*
@@ -526,7 +643,7 @@ def repo(request, tmp_path):
 ```
 Copre: create, get, get_by_email, list_all con filtri, update, delete.
 
-**`test_contracts.py`** — usa `FlaskResponseAdapter`, una chiamata per operazione:
+**`test_contracts.py`** — usa `flask_to_contract_dict()`, una chiamata per operazione:
 
 | Operazione | Metodo | Path usato in assert_matches_contract |
 |---|---|---|
@@ -549,18 +666,32 @@ quando lo schema non prevede contenuto (il codice `_response_schema` ritorna
 ```python
 @pytest.fixture(scope="module")
 def live_server(tmp_path_factory):
-    port = find_free_port()   # socket(AF_INET, SOCK_STREAM).bind(('', 0))
+    port = find_free_port()
     env = {**os.environ, "PORT": str(port), "STORAGE_BACKEND": "memory"}
     proc = subprocess.Popen(
         ["py", "-3.12", "-m", "app"],
         cwd=str(SERVICE_DIR),
         env=env,
     )
-    wait_for_health(f"http://localhost:{port}/health", timeout=10)
-    yield f"http://localhost:{port}"
-    proc.terminate()
-    proc.wait(timeout=5)
+    try:
+        wait_for_health(f"http://localhost:{port}/health", timeout=10)
+        yield f"http://localhost:{port}"
+    finally:
+        # cleanup garantito anche se wait_for_health fallisce o un test fa eccezione
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait()
 ```
+
+Il `try/finally` garantisce che il processo sia sempre terminato anche se:
+- `wait_for_health` scade (il servizio non si avvia)
+- un test lancia un'eccezione imprevista
+- pytest riceve SIGINT
+
+`proc.kill()` è il fallback se `terminate()` non riesce entro 5 secondi.
 
 Casi verificati:
 - positivo: POST + GET by id
@@ -594,24 +725,61 @@ Le aree a rischio per la coverage:
 
 ## 14. Avvio Windows e compatibilità con `services.yaml`
 
-Il `services.yaml` dichiara:
+Il `services.yaml` va creato nella root di `Exam/techconf-exam/` copiando e
+adattando `services.example.yaml`. Per ora si dichiara **solo** `user` (gli altri
+verranno aggiunti man mano che i servizi vengono implementati):
+
 ```yaml
-user:
-  cwd: services/user-service
-  command: python -m app
-  health_path: /health
+# Exam/techconf-exam/services.yaml
+services:
+  user:
+    cwd: services/user-service
+    command: python -m app
+    health_path: /health
 ```
 
-La suite di collaudo (harness.py) lancia il processo con `subprocess.Popen(command,
-shell=True, cwd=cwd)`. Su Windows, `python` deve essere nel PATH. Se non lo è,
-l'alternativa è cambiare `command` in `services.yaml` in `py -3.12 -m app`.
+**Schema obbligatorio:** la chiave radice è `services:`, poi il nome canonico
+del servizio (`user`, `event`, ecc.), poi `cwd` (relativo alla root del repo),
+`command` e `health_path`.
 
-**In sviluppo locale** il comando è `py -3.12 -m app` con `PORT=5001` impostata
-nel terminale. Il `services.yaml` usa `python` perché la suite gira in un ambiente
-Python già attivato.
+**Preparazione ambiente su questa macchina (Windows, Python 3.12 via py launcher):**
 
-**Verifica compatibilità:** il servizio legge `PORT` da env (REQ-USR-F13-AC1);
-la suite inietta `PORT=15001` prima del lancio. Non c'è hard-coding della porta.
+La suite di collaudo (`harness.py`) lancia i processi con `subprocess.Popen` e
+`shell=True` dal `cwd` dichiarato. Essa **non attiva automaticamente alcun
+virtualenv**: `python` deve essere nel PATH del processo che lancia pytest.
+
+Approccio consigliato:
+1. Creare un virtualenv nella root di `Exam/techconf-exam/` (o per ogni servizio):
+   ```powershell
+   cd Exam\techconf-exam\services\user-service
+   py -3.12 -m venv .venv
+   .\.venv\Scripts\activate
+   pip install flask requests pytest pytest-cov
+   ```
+2. Avviare pytest della suite con il venv attivato, così `python` nel PATH
+   punta all'interprete del venv:
+   ```powershell
+   # dalla root Exam/techconf-exam/, venv attivato
+   pytest tests/integration -m mandatory -v
+   ```
+3. Alternativa per evitare ambiguità: cambiare `command` in `services.yaml` con
+   il percorso assoluto dell'interprete o `py -3.12`:
+   ```yaml
+   command: py -3.12 -m app
+   ```
+   Questa è la scelta più robusta su Windows dove `python` spesso non è nel PATH
+   di sistema. La scelta definitiva va presa al task T-14 (creazione services.yaml).
+
+**In sviluppo locale** (senza suite):
+```powershell
+cd Exam\techconf-exam\services\user-service
+$env:PORT = "5001"; $env:STORAGE_BACKEND = "memory"
+py -3.12 -m app
+```
+
+**Verifica compatibilità:** il servizio legge `PORT` tramite `load_config()`
+(REQ-USR-F13-AC1); la suite inietta `PORT=15001` prima del lancio. Non c'è
+hard-coding della porta.
 
 ---
 
