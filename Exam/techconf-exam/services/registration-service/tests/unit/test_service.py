@@ -402,3 +402,100 @@ def test_list_no_filters_returns_all_REQ_REG_F05(service, repo):
 
     assert result["total"] == 4
     assert len(result["items"]) == 4
+
+
+# --------------------------------------------------------------------------- #
+# patch_status — transitions and seat freeing (REQ-REG-F06, REQ-REG-B07, F10)
+# --------------------------------------------------------------------------- #
+def test_patch_status_absent_maps_not_found_REQ_REG_F06(service):
+    """PATCH on a missing id raises ServiceError NOT_FOUND (REQ-REG-F06-AC4)."""
+    with pytest.raises(ServiceError) as excinfo:
+        service.patch_status(str(uuid.uuid4()), "cancelled")
+
+    assert excinfo.value.code == errors.NOT_FOUND
+
+
+@responses.activate
+def test_patch_status_confirmed_to_cancelled_ok_and_frees_seat_REQ_REG_B07(service, repo):
+    """confirmed -> cancelled succeeds and frees a seat (REQ-REG-B07-AC1/AC4).
+
+    With capacity 1, cancelling the only confirmed registration must let a fresh
+    registration for the same event succeed (the seat is freed).
+    """
+    user_a, user_b = str(uuid.uuid4()), str(uuid.uuid4())
+    event_id = str(uuid.uuid4())
+
+    # Capacity 1: seed a confirmed registration directly through the repository.
+    record = _seed_confirmed(repo, user_a, event_id)
+    assert repo.count_confirmed(event_id) == 1
+
+    result = service.patch_status(record["id"], "cancelled")
+
+    assert result["status"] == "cancelled"
+    # The seat is freed: the confirmed count for the event drops to zero.
+    assert repo.count_confirmed(event_id) == 0
+
+    # A new registration for the same capacity-1 event now succeeds.
+    _mock_user_ok(user_b)
+    _mock_event_ok(event_id, capacity=1)
+
+    new_record = service.create_registration(
+        {"user_id": user_b, "event_id": event_id}
+    )
+
+    assert new_record["status"] == CONFIRMED
+    assert repo.count_confirmed(event_id) == 1
+
+
+def test_patch_status_cancelled_to_confirmed_maps_invalid_transition_REQ_REG_B07(service, repo):
+    """cancelled -> confirmed (reactivation) raises INVALID_STATUS_TRANSITION (REQ-REG-B07-AC2)."""
+    user_id, event_id = _ids()
+    record = _seed_confirmed(repo, user_id, event_id)
+    # Move it to cancelled first.
+    service.patch_status(record["id"], "cancelled")
+
+    with pytest.raises(ServiceError) as excinfo:
+        service.patch_status(record["id"], "confirmed")
+
+    assert excinfo.value.code == errors.INVALID_STATUS_TRANSITION
+    # The record stays cancelled: no reactivation happened (REQ-REG-B07-AC5).
+    assert repo.get(record["id"])["status"] == "cancelled"
+
+
+@pytest.mark.parametrize("status", ["confirmed", "cancelled"])
+def test_patch_status_same_status_is_noop_updated_at_unchanged_REQ_REG_B07(
+    service, repo, status
+):
+    """Same-status PATCH is a no-op: updated_at is left unchanged (REQ-REG-B07-AC3)."""
+    user_id, event_id = _ids()
+    record = _seed_confirmed(repo, user_id, event_id)
+    if status == "cancelled":
+        service.patch_status(record["id"], "cancelled")
+
+    before = repo.get(record["id"])
+    updated_at_before = before["updated_at"]
+
+    result = service.patch_status(record["id"], status)
+
+    assert result["status"] == status
+    # No-op must not refresh updated_at (REQ-REG-B07-AC3).
+    assert repo.get(record["id"])["updated_at"] == updated_at_before
+    assert result["updated_at"] == updated_at_before
+
+
+def test_patch_status_transition_refreshes_updated_at_REQ_REG_F10(service, repo, monkeypatch):
+    """A real confirmed -> cancelled transition refreshes updated_at (REQ-REG-F10-AC4)."""
+    user_id, event_id = _ids()
+    record = _seed_confirmed(repo, user_id, event_id)
+    created_updated_at = repo.get(record["id"])["updated_at"]
+
+    # Monkeypatch utcnow_iso used by the service so the new timestamp is distinct
+    # and deterministic.
+    new_ts = "2099-01-01T00:00:00.000000Z"
+    monkeypatch.setattr("app.service.utcnow_iso", lambda: new_ts)
+
+    result = service.patch_status(record["id"], "cancelled")
+
+    assert result["updated_at"] == new_ts
+    assert result["updated_at"] != created_updated_at
+    assert repo.get(record["id"])["updated_at"] == new_ts

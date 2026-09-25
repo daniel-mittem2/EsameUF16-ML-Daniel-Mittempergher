@@ -43,13 +43,22 @@ from typing import Optional
 
 from app import errors
 from app.http_client import DependencyUnavailableError, ReferenceNotFoundError
-from app.models import new_registration_record, registration_to_dict, utcnow_iso
+from app.models import (
+    CONFIRMED,
+    new_registration_record,
+    registration_to_dict,
+    utcnow_iso,
+)
 from app.pagination import paginate
 from app.repository import AlreadyRegisteredError, EventFullError
 from app.validators import VALID_STATUSES
 
 # The only event status that accepts registrations (REQ-REG-B03).
 PUBLISHED = "published"
+
+# The cancelled registration status (target of the only allowed transition,
+# REQ-REG-B07). ``CONFIRMED`` is imported from ``app.models``.
+CANCELLED = "cancelled"
 
 
 class ServiceError(Exception):
@@ -153,6 +162,59 @@ class RegistrationService:
                 {"id": reg_id},
             )
         return registration_to_dict(record)
+
+    def patch_status(self, reg_id: str, new_status: str) -> dict:
+        """Apply a status transition to ``reg_id`` (REQ-REG-F06, REQ-REG-B07).
+
+        The routes layer has already validated that ``new_status`` is one of the
+        contract enum values (REQ-REG-F06-AC3). This method enforces the
+        lifecycle rules of REQ-REG-B07:
+
+        1. locate the record first; a missing ``reg_id`` raises
+           :class:`ServiceError` with code ``NOT_FOUND`` (REQ-REG-F06-AC4);
+        2. ``new_status`` equal to the stored status is an unchanged **no-op**:
+           the record is returned untouched, ``repo.set_status`` is **not**
+           called and ``updated_at`` is left as-is (REQ-REG-B07-AC3);
+        3. ``confirmed → cancelled`` is the only real transition allowed
+           (REQ-REG-B07-AC1); it frees one seat because the confirmed count for
+           the event decreases by one (REQ-REG-B07-AC4). ``repo.set_status``
+           writes the new status under the repository lock and refreshes
+           ``updated_at`` with a fresh timestamp (REQ-REG-F10-AC4);
+        4. ``cancelled → confirmed`` (reactivation) is rejected with code
+           ``INVALID_STATUS_TRANSITION`` (422); a cancelled registration can
+           never be reactivated (REQ-REG-B07-AC2/AC5).
+
+        Returns the serialised record (the seven contract fields). No mutation
+        happens on a rejected transition.
+        """
+        record = self._repo.get(reg_id)
+        if record is None:
+            raise ServiceError(
+                errors.NOT_FOUND,
+                "registration not found",
+                {"id": reg_id},
+            )
+
+        current_status = record["status"]
+
+        # Unchanged status is a no-op: do not touch updated_at (REQ-REG-B07-AC3).
+        if new_status == current_status:
+            return registration_to_dict(record)
+
+        # The only allowed real transition is confirmed -> cancelled
+        # (REQ-REG-B07-AC1); anything else (i.e. cancelled -> confirmed) is a
+        # forbidden reactivation (REQ-REG-B07-AC2/AC5).
+        if not (current_status == CONFIRMED and new_status == CANCELLED):
+            raise ServiceError(
+                errors.INVALID_STATUS_TRANSITION,
+                "the only allowed status transition is confirmed to cancelled",
+                {"id": reg_id, "from": current_status, "to": new_status},
+            )
+
+        # confirmed -> cancelled: write under the repo lock and refresh
+        # updated_at; the freed seat is reflected by count_confirmed (B07-AC4).
+        updated = self._repo.set_status(reg_id, new_status, utcnow_iso())
+        return registration_to_dict(updated)
 
     def list_registrations(
         self, filters: dict, page: int, page_size: int
