@@ -1,0 +1,30 @@
+# Force LF line endings for all protected and source files.
+# This prevents Windows Git from re-introducing CRLF on checkout,
+# which would break CHECKSUMS.sha256 verification.
+
+* text=auto eol=lf
+
+# Explicitly force LF for protected files
+contracts/openapi/*.yaml   text eol=lf
+contracts/validator.py     text eol=lf
+tests/integration/*.py     text eol=lf
+tests/integration/*.ini    text eol=lf
+tests/integration/*.txt    text eol=lf
+
+# Python and YAML source files
+*.py    text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.md    text eol=lf
+*.json  text eol=lf
+*.txt   text eol=lf
+*.ini   text eol=lf
+*.cfg   text eol=lf
+*.toml  text eol=lf
+
+# Binaries — no conversion
+*.sqlite  binary
+*.sqlite3 binary
+*.png     binary
+*.jpg     binary
+*.gif     binary
