@@ -22,7 +22,7 @@ per validare riferimenti agli utenti. Il servizio non chiama nessun altro micros
 | **Utente** | Risorsa identificata da UUID v4, con campi anagrafici e ruolo |
 | **Email normalizzata** | Email convertita in minuscolo prima della persistenza e del confronto |
 | **Risorsa read-only** | Campo generato dal server (`id`, `created_at`, `updated_at`) che non può essere impostato o modificato dal client |
-| **PUT sostitutivo** | Rimpiazza l'intera risorsa con i campi forniti; equivale a cancellare e ricreare mantenendo l'id |
+| **PUT sostitutivo** | Sostituisce tutti i campi modificabili con i valori forniti, mantenendo `id` e `created_at` invariati |
 | **PATCH parziale** | Aggiorna solo i campi presenti nel body; i campi assenti rimangono invariati |
 
 ---
@@ -88,8 +88,9 @@ stored records are always consistent with business rules.
    user-service SHALL respond 422 `VALIDATION_ERROR`.
 2. IF `last_name` is absent or empty or longer than 50 characters THEN the
    user-service SHALL respond 422 `VALIDATION_ERROR`.
-3. IF `email` is absent or not a valid RFC 5322 email address THEN the user-service
-   SHALL respond 422 `VALIDATION_ERROR`.
+3. IF `email` is absent or not a syntactically valid email address (see note on
+   email format in the Ambiguity section) THEN the user-service SHALL respond 422
+   `VALIDATION_ERROR`.
 4. IF `company` is present and not `null` and longer than 100 characters THEN the
    user-service SHALL respond 422 `VALIDATION_ERROR`.
 5. IF `role` is present and not one of `attendee`, `speaker`, `organizer` THEN the
@@ -103,6 +104,14 @@ stored records are always consistent with business rules.
    *(Distinction: 400 = JSON syntax broken; 422 = JSON valid but structure/values wrong.)*
 8. IF the `Content-Type` header is `application/json` but the body cannot be parsed
    as JSON THEN the user-service SHALL respond 400.
+9. THE request body MUST be a JSON object (`{...}`); if the body is a JSON array,
+   `null`, or a scalar value (string, number, boolean) THE user-service SHALL
+   respond 422 `VALIDATION_ERROR`.
+10. Each field MUST match the type declared in the `UserCreate` schema; implicit type
+    coercions (e.g. integer `1` for a string field) SHALL NOT be performed. The only
+    field that accepts `null` as a value is `company`.
+    IF a field is present with the wrong type THEN the user-service SHALL respond 422
+    `VALIDATION_ERROR`.
 
 ---
 
@@ -124,15 +133,19 @@ wish to change, so that I do not have to re-supply unchanged data.
    SHALL respond 422 `VALIDATION_ERROR`.
    *(The contract declares `additionalProperties: false` on `UserUpdate`.)*
 4. WHEN a client sends a PATCH body with no fields (empty object `{}`) THE
-   user-service SHALL respond 200 with the unchanged resource.
-   *(Rationale: an empty PATCH is idempotent and not an error; `updated_at` MAY be
-   refreshed — see REQ-USR-F11 for the updated_at rule.)*
-   **Ambiguity note:** the contract does not specify whether an empty PATCH body
-   must update `updated_at`. This spec chooses **not** to update `updated_at` on
-   an empty PATCH so that the operation is truly idempotent. The design.md must
-   implement and document this choice.
+   user-service SHALL respond 200 with the resource and its timestamps unchanged.
+   *(An empty PATCH is idempotent: neither the data nor `updated_at` is modified.
+   The contract does not specify this case; this is an explicit design choice.)*
 5. IF the PATCH body is syntactically invalid JSON THEN the user-service SHALL
    respond 400.
+   *(The contract does not list 400 for PATCH, but `platform-standards.md` mandates
+   400 for malformed JSON on all endpoints. Platform standard takes precedence;
+   the contract is not modified.)*
+6. THE PATCH body MUST be a JSON object (`{...}`); if the body is a JSON array,
+   `null`, or a scalar value THE user-service SHALL respond 422 `VALIDATION_ERROR`.
+7. Each field in the PATCH body MUST match the type declared in the `UserUpdate`
+   schema; the only field that accepts `null` is `company`. IF a field is present
+   with the wrong type THEN the user-service SHALL respond 422 `VALIDATION_ERROR`.
 
 ---
 
@@ -230,7 +243,10 @@ large datasets without loading all records at once.
    `VALIDATION_ERROR`.
 5. IF `page` is less than 1 or `page_size` is less than 1 THEN the user-service
    SHALL respond 422 `VALIDATION_ERROR`.
-6. WHEN the requested page is beyond the last page THE user-service SHALL return an
+6. IF `page` or `page_size` is supplied as an empty string, a non-numeric value, or
+   a non-integer (e.g. `1.5`) THEN the user-service SHALL respond 422
+   `VALIDATION_ERROR`.
+7. WHEN the requested page is beyond the last page THE user-service SHALL return an
    empty `items` array with the correct `total` and the requested `page`/`page_size`
    values.
 7. THE `total` field SHALL count matching records after filters are applied and before
@@ -252,8 +268,10 @@ single call, so that I can update all fields atomically.
    `company` and `role` are optional with the same defaults as POST.
 3. IF the user with the given `id` does not exist THEN the user-service SHALL respond
    404 `NOT_FOUND`.
-4. IF the request body contains extra or read-only fields THEN the user-service SHALL
-   respond 422 `VALIDATION_ERROR` (same rule as REQ-USR-F03-AC4).
+4. IF the request body contains any field not defined in the `UserCreate` schema
+   (`id`, `created_at`, `updated_at`, or any unknown key) THEN the user-service
+   SHALL respond 422 `VALIDATION_ERROR` (same rule as REQ-USR-F03-AC9 and AC10:
+   body must be an object, extra fields rejected).
 5. THE `created_at` field SHALL remain unchanged after a PUT; only `updated_at` SHALL
    be refreshed (see REQ-USR-F11).
 6. Validation rules from REQ-USR-F03 and email rules from REQ-USR-B01/B02 apply to
@@ -300,21 +318,25 @@ that their data is no longer accessible.
 
 ---
 
-## REQ-USR-F10 — Metodi HTTP non consentiti
+## REQ-USR-F10 — Metodi HTTP non consentiti e percorsi sconosciuti
 
 **User story:** As a client, I want clear feedback when I use an unsupported HTTP
-method, so that I know the operation is not available.
+method or an unknown path, so that I can distinguish between "path doesn't exist"
+and "method not allowed on this path".
 
 **Acceptance criteria**
 
-1. WHEN any HTTP method not defined in the contract is used on any path THE
-   user-service SHALL respond 405.
-   *Examples: POST /api/v1/users/{id}, DELETE /api/v1/users, PUT /health.*
-2. THE 405 response body SHOULD conform to the `Error` schema.
-   **Ambiguity note:** the contract lists 405 as a valid status but does not include
-   it in individual operation response lists. Flask returns 405 automatically;
-   this requirement is satisfied by not suppressing that default behaviour and
-   by ensuring the response body uses the standard error format.
+1. WHEN an HTTP method not defined in the contract is used on a path that IS defined
+   (e.g. `POST /api/v1/users/{id}`, `DELETE /api/v1/users`, `PUT /health`) THE
+   user-service SHALL respond 405 with a JSON error body.
+2. WHEN a request is made to a path that is NOT defined in the contract THE
+   user-service SHALL respond 404 with a JSON error body.
+   *(Example: `GET /api/v1/unknown` → 404; `DELETE /api/v1/users` → 405.)*
+3. THE 405 and 404 error bodies SHALL conform to the `Error` schema
+   (`{"error": {"code": "...", "message": "...", "details": {}}}`).
+   The JSON error body is **mandatory** (SHALL), not optional.
+   *(Flask emits 404/405 automatically; the requirement is met by registering
+   error handlers that produce the standard `Error` format.)*
 
 ---
 
@@ -327,8 +349,10 @@ was created and last modified, so that I can audit changes.
 
 1. WHEN a user is created `created_at` and `updated_at` SHALL be set to the same
    server-generated UTC timestamp.
-2. WHEN a user is modified via PUT or PATCH `updated_at` SHALL be refreshed to the
-   current UTC timestamp.
+2. WHEN a user is modified via PUT or PATCH with at least one field change
+   `updated_at` SHALL be refreshed to the current UTC timestamp.
+   WHEN a PATCH body is empty (`{}`) neither the resource nor `updated_at` SHALL
+   be modified (see REQ-USR-F04-AC4).
 3. `created_at` SHALL never change after creation, regardless of the number of
    updates.
 4. WHEN a request fails validation or produces any error response THE timestamps of
@@ -348,12 +372,16 @@ status code alone.
 
 1. ALL error responses (400, 404, 405, 409, 422) SHALL have a JSON body conforming
    to the `Error` schema: `{"error": {"code": "UPPER_SNAKE", "message": "...",
-   "details": {...}}}`.
+   "details": {}}}`.
 2. THE `code` field SHALL always be an UPPER_SNAKE_CASE string identifying the error
    type (e.g. `VALIDATION_ERROR`, `NOT_FOUND`, `EMAIL_ALREADY_EXISTS`).
-3. THE `details` field MAY be omitted or `null`; when present it SHALL be an object.
+3. THE `details` field SHALL always be present as a JSON object (`{}`); it SHALL NOT
+   be `null` or omitted. When no additional context is available, return `{}`.
 4. No successful (2xx) response SHALL contain an `error` key.
-5. THE Content-Type of all responses (success and error) SHALL be `application/json`.
+5. THE Content-Type of all JSON responses (success and error) SHALL be
+   `application/json`. The exception is DELETE 204, which SHALL have no response
+   body and no Content-Type constraint.
+6. THE 204 response to DELETE SHALL have an empty body; no JSON is returned.
 
 ---
 
@@ -420,9 +448,9 @@ requirements at 80 % or more, so that regressions are caught before merging.
 4. EACH test function or its docstring SHALL reference the requirement it verifies
    using the pattern `REQ-USR-<ID>` (e.g. `@pytest.mark.req("REQ-USR-B01")` or
    in the function name).
-5. THE user-service has no external HTTP dependencies; no `responses` mock is needed
-   for service-level unit tests (only for contract-validation tests if they call
-   the Flask test client directly).
+5. THE user-service has no external HTTP dependencies; the `responses` library is
+   therefore not needed in unit tests. All HTTP interactions are tested through the
+   Flask test client, which invokes the application in-process without network calls.
 6. THE integration test for user-service SHALL start a real process on a free port,
    wait for `/health`, run positive and negative cases, then terminate the process.
 
@@ -440,6 +468,7 @@ requirements at 80 % or more, so that regressions are caught before merging.
 | `/api/v1/users/{id}` | PATCH | REQ-USR-F08, REQ-USR-F04, REQ-USR-B01, REQ-USR-B02, REQ-USR-F11, REQ-USR-F12 |
 | `/api/v1/users/{id}` | DELETE | REQ-USR-F09, REQ-USR-F12 |
 | Qualsiasi path | Metodo non consentito | REQ-USR-F10, REQ-USR-F12 |
+| Path sconosciuto | qualsiasi metodo | REQ-USR-F10, REQ-USR-F12 |
 | Tutti gli endpoint | — | REQ-USR-F13, REQ-USR-F14 |
 
 ---
@@ -463,9 +492,10 @@ requirements at 80 % or more, so that regressions are caught before merging.
 
 | ID | Ambiguità / Scelta |
 |---|---|
-| REQ-USR-F04-AC4 | Un PATCH vuoto `{}` è valido (200, risorsa invariata). `updated_at` NON viene aggiornato per preservare l'idempotenza. Il contratto non specifica; questa è una scelta esplicita da documentare in design.md. |
-| REQ-USR-F03-AC4 | La validazione di campi extra (id, created_at, updated_at) in input usa `additionalProperties: false` del contratto come fonte: risposta 422. |
+| REQ-USR-F04-AC4 | Un PATCH vuoto `{}` è valido (200, risorsa e timestamp invariati). Scelta: `updated_at` NON viene aggiornato per preservare l'idempotenza. Il contratto non specifica questo caso. |
+| REQ-USR-F02/F07-extra-fields | La validazione di campi extra (id, created_at, updated_at) in input produce 422, per effetto di `additionalProperties: false` nel contratto su `UserCreate`. Documentato in REQ-USR-F03-AC9/AC10 e REQ-USR-F07-AC4. |
 | REQ-USR-F05-AC3 | UUID sintatticamente invalido nel path: il contratto non dichiara 422 per GET/{id}, quindi si risponde 404. |
-| REQ-USR-F10-AC2 | Flask restituisce 405 automaticamente; il requisito è soddisfatto assicurandosi che il gestore di errori Flask produca il formato `Error` standard. |
-| REQ-USR-F14 | user-service non ha HTTP client verso altri servizi; `http_client.py` può essere uno stub vuoto o assente in questo servizio. |
-| REQ-USR-F04-AC5 | Il contratto non elenca 400 come risposta di PATCH. Tuttavia `platform-standards.md` stabilisce che JSON malformato → 400 per tutti gli endpoint. Questa spec applica la regola di piattaforma (400 per JSON non parseable anche su PATCH). Non si modifica il contratto. |
+| REQ-USR-F10-AC3 | Flask restituisce 404/405 automaticamente; il requisito è soddisfatto registrando error handler Flask che producono il formato `Error` standard con `details: {}`. |
+| REQ-USR-F14 | user-service non ha dipendenze HTTP esterne; `http_client.py` non è necessario e non viene creato per questo servizio. |
+| REQ-USR-F04-AC5 / PATCH 400 | Il contratto non elenca 400 come risposta di PATCH. La regola di piattaforma (`platform-standards.md`) stabilisce 400 per JSON malformato su tutti gli endpoint. La regola di piattaforma prevale; il contratto non è modificato. |
+| REQ-USR-F03-AC3 / email format | Il contratto dichiara `format: email` (OpenAPI 3.0). Questa spec non richiede un validatore completo RFC 5322 (che ammette molti formati esotici). La strategia di validazione scelta (regex minima o libreria standard) è documentata in `design.md`. Il requisito si allinea al `format: email` del contratto: un'email accettabile deve avere la forma `local@domain.tld`; la precisione esatta è una decisione di design. |
