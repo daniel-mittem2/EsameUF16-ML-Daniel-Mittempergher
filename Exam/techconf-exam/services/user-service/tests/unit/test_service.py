@@ -659,3 +659,87 @@ def test_delete_user_second_delete_raises_not_found():
     svc.delete_user(created["id"])
     with pytest.raises(UserNotFoundError):
         svc.delete_user(created["id"])
+
+
+# --------------------------------------------------------------------------- #
+# No mutation on error (REQ-USR-F11-AC4)
+# --------------------------------------------------------------------------- #
+def test_replace_user_conflict_leaves_stored_record_unchanged():
+    """REQ-USR-F11-AC4: a PUT that fails on email conflict mutates nothing.
+
+    The stored record — including its fields and timestamps — must be identical
+    to what it was before the rejected replace (no partial mutation on error).
+    """
+    svc = _service()
+    keep = svc.create_user(
+        {
+            "first_name": "Keep",
+            "last_name": "Me",
+            "email": "keep@example.com",
+            "company": "KeepCo",
+            "role": "speaker",
+        }
+    )
+    other = svc.create_user(
+        {"first_name": "Other", "last_name": "User", "email": "other@example.com"}
+    )
+    before = dict(svc.get_user(keep["id"]))
+
+    with pytest.raises(EmailConflictError):
+        svc.replace_user(
+            keep["id"],
+            {
+                "first_name": "Should",
+                "last_name": "NotApply",
+                "email": other["email"],  # already used by another user → 409
+            },
+        )
+
+    after = svc.get_user(keep["id"])
+    assert after == before  # every field and timestamp is unchanged
+
+
+def test_update_user_conflict_leaves_stored_record_unchanged():
+    """REQ-USR-F11-AC4: a PATCH that fails on email conflict mutates nothing."""
+    svc = _service()
+    keep = svc.create_user(
+        {
+            "first_name": "Patch",
+            "last_name": "Keep",
+            "email": "patchkeep@example.com",
+            "company": "PatchCo",
+        }
+    )
+    other = svc.create_user(
+        {"first_name": "Taken", "last_name": "Email", "email": "taken@example.com"}
+    )
+    before = dict(svc.get_user(keep["id"]))
+
+    with pytest.raises(EmailConflictError):
+        svc.update_user(keep["id"], {"email": other["email"]})
+
+    after = svc.get_user(keep["id"])
+    assert after == before
+
+
+def test_replace_user_repository_error_leaves_record_unchanged(monkeypatch):
+    """REQ-USR-F11-AC4: when the repository write fails, the stored record and
+    its timestamps stay unchanged (no partial mutation on error)."""
+    repo = MemoryUserRepository()
+    svc = UserService(repo)
+    created = svc.create_user(
+        {"first_name": "Race", "last_name": "Guard", "email": "raceguard@example.com"}
+    )
+    before = dict(repo.get(created["id"]))
+
+    def _raise(_user_id, _changes):
+        raise EmailAlreadyExistsError()
+
+    monkeypatch.setattr(repo, "update", _raise)
+    with pytest.raises(EmailConflictError):
+        svc.replace_user(
+            created["id"],
+            {"first_name": "New", "last_name": "Vals", "email": "new@example.com"},
+        )
+
+    assert repo.get(created["id"]) == before
