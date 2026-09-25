@@ -43,8 +43,10 @@ from typing import Optional
 
 from app import errors
 from app.http_client import DependencyUnavailableError, ReferenceNotFoundError
-from app.models import new_registration_record, utcnow_iso
+from app.models import new_registration_record, registration_to_dict, utcnow_iso
+from app.pagination import paginate
 from app.repository import AlreadyRegisteredError, EventFullError
+from app.validators import VALID_STATUSES
 
 # The only event status that accepts registrations (REQ-REG-B03).
 PUBLISHED = "published"
@@ -133,6 +135,59 @@ class RegistrationService:
             ) from exc
 
         return record
+
+    def get_registration(self, reg_id: str) -> dict:
+        """Return the registration ``reg_id`` as a response dict (REQ-REG-F04).
+
+        Reads the record from the repository and serialises it into the seven
+        contract fields (``registration_to_dict``). Raises
+        :class:`ServiceError` with code ``NOT_FOUND`` when no record with
+        ``reg_id`` exists (REQ-REG-F04-AC2). This handler never calls a
+        dependency (REQ-REG-F04-AC4).
+        """
+        record = self._repo.get(reg_id)
+        if record is None:
+            raise ServiceError(
+                errors.NOT_FOUND,
+                "registration not found",
+                {"id": reg_id},
+            )
+        return registration_to_dict(record)
+
+    def list_registrations(
+        self, filters: dict, page: int, page_size: int
+    ) -> dict:
+        """Return a paginated, filtered list of registrations (REQ-REG-F05).
+
+        ``filters`` may carry ``user_id``, ``event_id`` and/or ``status``; keys
+        whose value is ``None`` are ignored. All provided filters are combined
+        with AND logic by the repository (REQ-REG-F05-AC4). A ``status`` filter
+        that is not one of the contract enum values raises a
+        :class:`ServiceError` with code ``VALIDATION_ERROR`` (REQ-REG-F05-AC5).
+
+        The filtered records are serialised into response dicts and paginated:
+        ``total`` reflects the filtered count *before* slicing
+        (REQ-REG-F05-AC6), and a ``page`` beyond the last returns an empty
+        ``items`` list with the correct ``total`` and echoed ``page``/
+        ``page_size``. This handler never calls a dependency (REQ-REG-F05-AC7).
+        """
+        active_filters = {
+            key: value
+            for key, value in filters.items()
+            if value is not None
+        }
+
+        status = active_filters.get("status")
+        if status is not None and status not in VALID_STATUSES:
+            raise ServiceError(
+                errors.VALIDATION_ERROR,
+                "status must be one of confirmed, cancelled",
+                {"status": status},
+            )
+
+        records = self._repo.list_all(active_filters)
+        items = [registration_to_dict(record) for record in records]
+        return paginate(items, page, page_size)
 
     def _verify_user(self, user_id: str) -> None:
         """Verify the user exists via user-service (B01); map failures (B09)."""

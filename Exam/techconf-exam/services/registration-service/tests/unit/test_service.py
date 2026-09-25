@@ -271,3 +271,134 @@ def test_create_event_timeout_maps_503_REQ_REG_B09(service, repo):
 
     assert excinfo.value.code == errors.DEPENDENCY_UNAVAILABLE
     assert repo.list_all({}) == []
+
+
+# --------------------------------------------------------------------------- #
+# get_registration (REQ-REG-F04)
+# --------------------------------------------------------------------------- #
+def _seed_confirmed(repo, user_id, event_id, amount=149.00):
+    """Insert a confirmed record directly through the repository (no HTTP)."""
+    from app.models import new_registration_record, utcnow_iso
+
+    return repo.create_if_allowed(
+        user_id,
+        event_id,
+        capacity=100,
+        make_record=lambda: new_registration_record(
+            user_id, event_id, amount, utcnow_iso()
+        ),
+    )
+
+
+def test_get_registration_returns_contract_fields_REQ_REG_F04(service, repo):
+    """get_registration returns the seven contract fields for an existing record."""
+    user_id, event_id = _ids()
+    record = _seed_confirmed(repo, user_id, event_id)
+
+    result = service.get_registration(record["id"])
+
+    assert set(result) == {
+        "id", "user_id", "event_id", "amount", "status", "created_at", "updated_at",
+    }
+    assert result["id"] == record["id"]
+    assert result["user_id"] == user_id
+    assert result["event_id"] == event_id
+    assert result["status"] == CONFIRMED
+
+
+def test_get_registration_absent_maps_not_found_REQ_REG_F04(service):
+    """A missing id raises ServiceError NOT_FOUND (REQ-REG-F04-AC2)."""
+    with pytest.raises(ServiceError) as excinfo:
+        service.get_registration(str(uuid.uuid4()))
+
+    assert excinfo.value.code == errors.NOT_FOUND
+
+
+# --------------------------------------------------------------------------- #
+# list_registrations — filters, total, pagination (REQ-REG-F05)
+# --------------------------------------------------------------------------- #
+def test_list_combined_filters_and_logic_with_total_REQ_REG_F05(service, repo):
+    """Combined user_id + event_id + status filters apply with AND logic; total post-filter."""
+    user_a, user_b = str(uuid.uuid4()), str(uuid.uuid4())
+    event_x, event_y = str(uuid.uuid4()), str(uuid.uuid4())
+    now = "2026-10-15T09:30:00.000000Z"
+
+    # user_a @ event_x confirmed  -> the match we expect
+    _seed_confirmed(repo, user_a, event_x)
+    # user_a @ event_y confirmed  -> excluded by event_id
+    _seed_confirmed(repo, user_a, event_y)
+    # user_b @ event_x confirmed  -> excluded by user_id
+    _seed_confirmed(repo, user_b, event_x)
+    # user_b @ event_y confirmed then cancelled -> a cancelled row excluded by status
+    cancelled = _seed_confirmed(repo, user_b, event_y)
+    repo.set_status(cancelled["id"], "cancelled", now)
+
+    result = service.list_registrations(
+        {"user_id": user_a, "event_id": event_x, "status": CONFIRMED},
+        page=1,
+        page_size=20,
+    )
+
+    assert result["total"] == 1
+    assert len(result["items"]) == 1
+    item = result["items"][0]
+    assert item["user_id"] == user_a
+    assert item["event_id"] == event_x
+    assert item["status"] == CONFIRMED
+
+
+def test_list_total_reflects_filtered_count_before_pagination_REQ_REG_F05(service, repo):
+    """total is the filtered count before slicing (REQ-REG-F05-AC6)."""
+    event_id = str(uuid.uuid4())
+    for _ in range(5):
+        _seed_confirmed(repo, str(uuid.uuid4()), event_id)
+    # Noise on another event that must not be counted.
+    _seed_confirmed(repo, str(uuid.uuid4()), str(uuid.uuid4()))
+
+    result = service.list_registrations(
+        {"event_id": event_id}, page=1, page_size=2
+    )
+
+    assert result["total"] == 5
+    assert len(result["items"]) == 2
+    assert result["page"] == 1
+    assert result["page_size"] == 2
+
+
+def test_list_invalid_status_filter_maps_validation_error_REQ_REG_F05(service, repo):
+    """An unknown status filter raises ServiceError VALIDATION_ERROR (422) (REQ-REG-F05-AC5)."""
+    with pytest.raises(ServiceError) as excinfo:
+        service.list_registrations(
+            {"status": "pending"}, page=1, page_size=20
+        )
+
+    assert excinfo.value.code == errors.VALIDATION_ERROR
+
+
+def test_list_page_beyond_last_returns_empty_items_REQ_REG_F05(service, repo):
+    """A page beyond the last returns empty items with the correct total."""
+    event_id = str(uuid.uuid4())
+    for _ in range(3):
+        _seed_confirmed(repo, str(uuid.uuid4()), event_id)
+
+    result = service.list_registrations(
+        {"event_id": event_id}, page=99, page_size=20
+    )
+
+    assert result["items"] == []
+    assert result["total"] == 3
+    assert result["page"] == 99
+    assert result["page_size"] == 20
+
+
+def test_list_no_filters_returns_all_REQ_REG_F05(service, repo):
+    """No filters returns every record; None-valued filters are ignored."""
+    for _ in range(4):
+        _seed_confirmed(repo, str(uuid.uuid4()), str(uuid.uuid4()))
+
+    result = service.list_registrations(
+        {"user_id": None, "event_id": None, "status": None}, page=1, page_size=20
+    )
+
+    assert result["total"] == 4
+    assert len(result["items"]) == 4
