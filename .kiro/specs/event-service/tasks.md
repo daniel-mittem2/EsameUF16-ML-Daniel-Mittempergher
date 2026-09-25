@@ -19,7 +19,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
 
 ---
 
-- [ ] 1. T-01 — Scaffold struttura directory e package
+- [x] 1. T-01 — Scaffold struttura directory e package
 
   - Creare `Exam/techconf-exam/services/event-service/`
   - Creare `app/__init__.py` (docstring), `app/__main__.py` (stub)
@@ -39,7 +39,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-F13, REQ-EVT-F14_
   _Commit: `feat(event): scaffold package structure [T-01]`_
 
-- [ ] 2. T-02 — Configurazione (`config.py`)
+- [x] 2. T-02 — Configurazione (`config.py`)
 
   - Implementare il dataclass `Config` con `port: int`, `storage_backend: str`,
     `data_dir: Path`, `user_service_url: str`
@@ -52,7 +52,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-F13_
   _Commit: `feat(event): config factory and Config dataclass [T-02]`_
 
-- [ ] 3. T-04 — Moduli di supporto (`errors`, `pagination`, `models`, `validators`)
+- [x] 3. T-04 — Moduli di supporto (`errors`, `pagination`, `models`, `validators`)
 
   - `errors.py`: costanti (`VALIDATION_ERROR`, `REFERENCE_NOT_FOUND`,
     `INVALID_ORGANIZER`, `INVALID_STATUS_TRANSITION`, `NOT_FOUND`, `METHOD_NOT_ALLOWED`,
@@ -74,7 +74,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-F03, REQ-EVT-F04, REQ-EVT-F06, REQ-EVT-F11, REQ-EVT-F12, REQ-EVT-B03_
   _Commit: `feat(event): errors, pagination, models, validators modules [T-04]`_
 
-- [ ] 4. T-05 — Repository: interfaccia astratta e backend memory
+- [x] 4. T-05 — Repository: interfaccia astratta e backend memory
 
   - Definire `AbstractEventRepository(ABC)` in `repository.py` con `create`, `get`,
     `list_all(filters)`, `update`, `delete`
@@ -88,7 +88,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-F14, REQ-EVT-B06_
   _Commit: `feat(event): repository ABC and MemoryEventRepository [T-05]`_
 
-- [ ] 5. T-06 — Backend JSON
+- [x] 5. T-06 — Backend JSON
 
   - Implementare `JsonEventRepository`: legge `events.json` all'apertura (lista vuota se
     assente), scrittura atomica (tmp + `os.replace()`), `RLock` per istanza, filtri in
@@ -99,7 +99,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-F14_
   _Commit: `feat(event): JsonEventRepository with atomic writes and RLock [T-06]`_
 
-- [ ] 6. T-07 — Backend SQLite
+- [x] 6. T-07 — Backend SQLite
 
   - Implementare `SqliteEventRepository`: `CREATE TABLE IF NOT EXISTS events (...)`,
     connessione condivisa `check_same_thread=False`, `RLock` per istanza, ogni write in
@@ -110,7 +110,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-F14_
   _Commit: `feat(event): SqliteEventRepository with shared connection and RLock [T-07]`_
 
-- [ ] 7. T-08 — Client HTTP verso user-service (`http_client.py`)
+- [x] 7. T-08 — Client HTTP verso user-service (`http_client.py`)
 
   - Implementare `UserServiceClient(base_url, timeout=2.0)` con `get_user(id)` e
     `verify_organizer(id)`
@@ -125,7 +125,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-B01, REQ-EVT-B02, REQ-EVT-B05, REQ-EVT-F13_
   _Commit: `feat(event): UserServiceClient with 2s timeout and error mapping [T-08]`_
 
-- [ ] 8. T-03 — Health endpoint e application factory
+- [x] 8. T-03 — Health endpoint e application factory
 
   - Implementare `create_app(repo=None, config=None, user_client=None) -> Flask` in
     `app/__init__.py`
@@ -139,7 +139,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-F01, REQ-EVT-F10, REQ-EVT-F12, REQ-EVT-F13_
   _Commit: `feat(event): health endpoint and app factory [T-03]`_
 
-- [ ] 9. T-09 — EventService: create e regole B01/B02/B03/B05
+- [x] 9. T-09 — EventService: create e regole B01/B02/B03/B05
 
   - Implementare `EventService.__init__(self, repo, user_client)`
   - `create_event(data)`: validazione già passata a monte; `verify_organizer` (B01/B02),
@@ -154,7 +154,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-F02, REQ-EVT-B01, REQ-EVT-B02, REQ-EVT-B03, REQ-EVT-B05, REQ-EVT-F11_
   _Commit: `feat(event): EventService.create_event with organizer verification [T-09]`_
 
-- [ ] 10. T-10 — EventService: get, list e filtri B06
+- [x] 10. T-10 — EventService: get, list e filtri B06
 
   - `get_event(id)` (404 se assente, nessuna chiamata HTTP)
   - `list_events(filters, page, page_size)`: filtri `status`/`city` AND (B06), `total`
@@ -165,7 +165,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-F05, REQ-EVT-F06, REQ-EVT-B06_
   _Commit: `feat(event): EventService.get_event and list_events with filters [T-10]`_
 
-- [ ] 11. T-11 — EventService: replace (PUT), update (PATCH) e transizioni B04
+- [x] 11. T-11 — EventService: replace (PUT), update (PATCH) e transizioni B04
 
   - `replace_event(id, data)` (PUT): 404 se assente; verifica organizzatore se
     `organizer_id` presente; transizione stato vs stored (B04); mantiene
@@ -184,7 +184,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-F07, REQ-EVT-F08, REQ-EVT-B03, REQ-EVT-B04, REQ-EVT-F11_
   _Commit: `feat(event): EventService.replace_event, update_event and status transitions [T-11]`_
 
-- [ ] 12. T-12 — Routes HTTP complete
+- [x] 12. T-12 — Routes HTTP complete
 
   - Implementare tutte le rotte in `routes.py` come Blueprint:
     `POST /api/v1/events` (201 + `Location`), `GET /api/v1/events` (paginato+filtri),
@@ -199,7 +199,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-F02..F12_
   _Commit: `feat(event): all HTTP routes in Blueprint [T-12]`_
 
-- [ ] 13. T-13 — Test unitari completi (`tests/unit/`)
+- [x] 13. T-13 — Test unitari completi (`tests/unit/`)
 
   - `test_routes.py`: Flask test client per ogni endpoint (400/404/405/422/503); mock
     user-service con `responses`; test di contratto con `flask_to_contract_dict`
@@ -220,7 +220,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-T01_
   _Commit: `test(event): full unit test suite with >=80% coverage [T-13]`_
 
-- [ ] 14. T-14 — Aggiornamento `services.yaml` (user + event)
+- [x] 14. T-14 — Aggiornamento `services.yaml` (user + event)
 
   - Aggiornare `Exam/techconf-exam/services.yaml` dichiarando `user` **ed** `event`:
     ```yaml
@@ -239,7 +239,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-F13, REQ-EVT-F14_
   _Commit: `feat(event): declare event in services.yaml [T-14]`_
 
-- [ ] 15. T-15 — Test di integrazione propri (`tests/integration/`)
+- [x] 15. T-15 — Test di integrazione propri (`tests/integration/`)
 
   - Implementare `test_event_integration.py` con fixture che avvia **user-service** ed
     **event-service** reali come sottoprocessi su porte libere (`STORAGE_BACKEND=memory`),
@@ -254,7 +254,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-T02_
   _Commit: `test(event): own integration tests with real user+event services [T-15]`_
 
-- [ ] 16. T-16 — Collaudo con suite del docente (event) e verifica checksum
+- [x] 16. T-16 — Collaudo con suite del docente (event) e verifica checksum
 
   - Eseguire dalla root `Exam/techconf-exam/`:
     `py -3.12 -m pytest tests/integration -k event -v` (IT-E01..IT-E08)
@@ -269,7 +269,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-B01..B06, REQ-EVT-F01..F14_
   _Commit: `docs(event): acceptance run notes for event suite [T-16]`_
 
-- [ ] 17. T-17 — `README.md` del servizio
+- [x] 17. T-17 — `README.md` del servizio
 
   - Creare `services/event-service/README.md`: installazione dipendenze; avvio (env
     `PORT`, `USER_SERVICE_URL`, `STORAGE_BACKEND`, `DATA_DIR`; tre backend); test unit
@@ -280,7 +280,7 @@ l'organizzatore, REQ-EVT-B01). Non è richiesto modificarlo.
   _Requirements: REQ-EVT-T01_
   _Commit: `docs(event): service README with setup and test commands [T-17]`_
 
-- [ ] 18. T-18 — Verifica finale di coerenza event-service
+- [x] 18. T-18 — Verifica finale di coerenza event-service
 
   - Rieseguire unit (`--cov-fail-under=80`) e integrazione propri; confermare verdi
   - Confermare che il collaudo `-k event` resta verde con user+event in services.yaml

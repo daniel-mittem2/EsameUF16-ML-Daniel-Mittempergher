@@ -1,0 +1,321 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. T-01 — Scaffold struttura directory e package": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345372465
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345382393
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345507733
+      }
+    ],
+    "2. T-02 — Configurazione (`config.py`)": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345372687
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345511423
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345587809
+      }
+    ],
+    "3. T-04 — Moduli di supporto (`errors`, `pagination`, `models`, `validators`)": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345372876
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345591680
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345836690
+      }
+    ],
+    "4. T-05 — Repository: interfaccia astratta e backend memory": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345373025
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345840371
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345971399
+      }
+    ],
+    "5. T-06 — Backend JSON": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345373164
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345975331
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790346131243
+      }
+    ],
+    "6. T-07 — Backend SQLite": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345373291
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790346135739
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790346299751
+      }
+    ],
+    "7. T-08 — Client HTTP verso user-service (`http_client.py`)": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345373421
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790346303840
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790346476166
+      }
+    ],
+    "8. T-03 — Health endpoint e application factory": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345373555
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790346480469
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790346628833
+      }
+    ],
+    "9. T-09 — EventService: create e regole B01/B02/B03/B05": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345373706
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790346634277
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790346821002
+      }
+    ],
+    "10. T-10 — EventService: get, list e filtri B06": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345373844
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790346827316
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790347729358
+      }
+    ],
+    "11. T-11 — EventService: replace (PUT), update (PATCH) e transizioni B04": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345374026
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790347734785
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790347967209
+      }
+    ],
+    "12. T-12 — Routes HTTP complete": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345374195
+      },
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790347976790
+      },
+      {
+        "executionId": "629ecb3a-0a3b-4f5d-8263-7015e5481999",
+        "chatSessionId": "sess_93317cc2-af0e-4e96-959b-c7aba3765183",
+        "timestamp": 1790348465688
+      },
+      {
+        "executionId": "629ecb3a-0a3b-4f5d-8263-7015e5481999",
+        "chatSessionId": "sess_93317cc2-af0e-4e96-959b-c7aba3765183",
+        "timestamp": 1790348501834
+      },
+      {
+        "executionId": "629ecb3a-0a3b-4f5d-8263-7015e5481999",
+        "chatSessionId": "sess_93317cc2-af0e-4e96-959b-c7aba3765183",
+        "timestamp": 1790348652799
+      }
+    ],
+    "13. T-13 — Test unitari completi (`tests/unit/`)": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345374336
+      },
+      {
+        "executionId": "629ecb3a-0a3b-4f5d-8263-7015e5481999",
+        "chatSessionId": "sess_93317cc2-af0e-4e96-959b-c7aba3765183",
+        "timestamp": 1790348656648
+      },
+      {
+        "executionId": "629ecb3a-0a3b-4f5d-8263-7015e5481999",
+        "chatSessionId": "sess_93317cc2-af0e-4e96-959b-c7aba3765183",
+        "timestamp": 1790348853704
+      }
+    ],
+    "14. T-14 — Aggiornamento `services.yaml` (user + event)": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345374511
+      },
+      {
+        "executionId": "629ecb3a-0a3b-4f5d-8263-7015e5481999",
+        "chatSessionId": "sess_93317cc2-af0e-4e96-959b-c7aba3765183",
+        "timestamp": 1790348857446
+      },
+      {
+        "executionId": "629ecb3a-0a3b-4f5d-8263-7015e5481999",
+        "chatSessionId": "sess_93317cc2-af0e-4e96-959b-c7aba3765183",
+        "timestamp": 1790348950365
+      }
+    ],
+    "15. T-15 — Test di integrazione propri (`tests/integration/`)": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345374642
+      },
+      {
+        "executionId": "629ecb3a-0a3b-4f5d-8263-7015e5481999",
+        "chatSessionId": "sess_93317cc2-af0e-4e96-959b-c7aba3765183",
+        "timestamp": 1790348954414
+      },
+      {
+        "executionId": "629ecb3a-0a3b-4f5d-8263-7015e5481999",
+        "chatSessionId": "sess_93317cc2-af0e-4e96-959b-c7aba3765183",
+        "timestamp": 1790349074818
+      }
+    ],
+    "16. T-16 — Collaudo con suite del docente (event) e verifica checksum": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345374778
+      },
+      {
+        "executionId": "629ecb3a-0a3b-4f5d-8263-7015e5481999",
+        "chatSessionId": "sess_93317cc2-af0e-4e96-959b-c7aba3765183",
+        "timestamp": 1790349078598
+      },
+      {
+        "executionId": "629ecb3a-0a3b-4f5d-8263-7015e5481999",
+        "chatSessionId": "sess_93317cc2-af0e-4e96-959b-c7aba3765183",
+        "timestamp": 1790349213992
+      }
+    ],
+    "17. T-17 — `README.md` del servizio": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345374903
+      },
+      {
+        "executionId": "629ecb3a-0a3b-4f5d-8263-7015e5481999",
+        "chatSessionId": "sess_93317cc2-af0e-4e96-959b-c7aba3765183",
+        "timestamp": 1790349217572
+      },
+      {
+        "executionId": "629ecb3a-0a3b-4f5d-8263-7015e5481999",
+        "chatSessionId": "sess_93317cc2-af0e-4e96-959b-c7aba3765183",
+        "timestamp": 1790349350371
+      }
+    ],
+    "18. T-18 — Verifica finale di coerenza event-service": [
+      {
+        "executionId": "b21efa12-5671-41cc-8030-4cf002146e2e",
+        "chatSessionId": "sess_42fff0bb-86de-4155-b6a6-65389bfd183a",
+        "timestamp": 1790345375041
+      },
+      {
+        "executionId": "629ecb3a-0a3b-4f5d-8263-7015e5481999",
+        "chatSessionId": "sess_93317cc2-af0e-4e96-959b-c7aba3765183",
+        "timestamp": 1790349354023
+      },
+      {
+        "executionId": "629ecb3a-0a3b-4f5d-8263-7015e5481999",
+        "chatSessionId": "sess_93317cc2-af0e-4e96-959b-c7aba3765183",
+        "timestamp": 1790349570116
+      }
+    ]
+  }
+}

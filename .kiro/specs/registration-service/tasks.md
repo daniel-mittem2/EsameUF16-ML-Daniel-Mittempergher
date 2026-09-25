@@ -20,7 +20,7 @@ senza implementare i task successivi.
 
 ---
 
-- [ ] 1. T-01 — Scaffold struttura directory e package
+- [x] 1. T-01 — Scaffold struttura directory e package
 
   - Creare `Exam/techconf-exam/services/registration-service/`
   - `app/__init__.py` (docstring), `app/__main__.py` (stub)
@@ -36,7 +36,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-F12, REQ-REG-F13_
   _Commit: `feat(registration): scaffold package structure [T-01]`_
 
-- [ ] 2. T-02 — Configurazione (`config.py`)
+- [x] 2. T-02 — Configurazione (`config.py`)
 
   - `Config` con `port`, `storage_backend`, `data_dir`, `user_service_url`,
     `event_service_url`
@@ -49,7 +49,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-F12_
   _Commit: `feat(registration): config factory and Config dataclass [T-02]`_
 
-- [ ] 3. T-04 — Moduli di supporto (`errors`, `pagination`, `models`, `validators`)
+- [x] 3. T-04 — Moduli di supporto (`errors`, `pagination`, `models`, `validators`)
 
   - `errors.py`: costanti (`VALIDATION_ERROR`, `REFERENCE_NOT_FOUND`, `EVENT_NOT_OPEN`,
     `ALREADY_REGISTERED`, `EVENT_FULL`, `INVALID_STATUS_TRANSITION`, `NOT_FOUND`,
@@ -68,7 +68,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-F03, REQ-REG-F05, REQ-REG-F06, REQ-REG-F10, REQ-REG-F11_
   _Commit: `feat(registration): errors, pagination, models, validators modules [T-04]`_
 
-- [ ] 4. T-05 — Repository: interfaccia astratta e backend memory
+- [x] 4. T-05 — Repository: interfaccia astratta e backend memory
 
   - `AbstractRegistrationRepository(ABC)` con `create_if_allowed(user_id, event_id,
     capacity, make_record)`, `get`, `list_all(filters)`, `set_status(reg_id, new_status,
@@ -84,7 +84,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-F13, REQ-REG-B04, REQ-REG-B05, REQ-REG-B07, REQ-REG-B08_
   _Commit: `feat(registration): repository ABC and MemoryRegistrationRepository [T-05]`_
 
-- [ ] 5. T-06 — Backend JSON
+- [x] 5. T-06 — Backend JSON
 
   - `JsonRegistrationRepository`: `registrations.json`, lettura completa, scrittura
     atomica (tmp + `os.replace()`), `RLock`, stessa semantica `create_if_allowed`/
@@ -94,7 +94,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-F13_
   _Commit: `feat(registration): JsonRegistrationRepository with atomic writes and RLock [T-06]`_
 
-- [ ] 6. T-07 — Backend SQLite
+- [x] 6. T-07 — Backend SQLite
 
   - `SqliteRegistrationRepository`: `CREATE TABLE registrations (...)`, indice
     `(event_id, status)`, indice unico parziale `(user_id, event_id) WHERE
@@ -107,7 +107,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-F13, REQ-REG-B04_
   _Commit: `feat(registration): SqliteRegistrationRepository with shared connection and RLock [T-07]`_
 
-- [ ] 7. T-08 — Client HTTP verso user ed event (`http_client.py`)
+- [x] 7. T-08 — Client HTTP verso user ed event (`http_client.py`)
 
   - `UserServiceClient(base_url, timeout=2.0)` con `get_user(id)`; `EventServiceClient`
     con `get_event(id)`; base `_get` condivisa
@@ -120,7 +120,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-B01, REQ-REG-B02, REQ-REG-B09, REQ-REG-F12_
   _Commit: `feat(registration): UserServiceClient and EventServiceClient with 2s timeout [T-08]`_
 
-- [ ] 8. T-03 — Health endpoint e application factory
+- [x] 8. T-03 — Health endpoint e application factory
 
   - `create_app(repo=None, config=None, user_client=None, event_client=None) -> Flask`
   - `GET /health` → `{"status": "ok", "service": "registration-service"}`
@@ -133,7 +133,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-F01, REQ-REG-F09, REQ-REG-F11, REQ-REG-F12_
   _Commit: `feat(registration): health endpoint and app factory [T-03]`_
 
-- [ ] 9. T-09 — RegistrationService: create (B01/B02/B03/B06 + atomico B04/B05/B09)
+- [x] 9. T-09 — RegistrationService: create (B01/B02/B03/B06 + atomico B04/B05/B09)
 
   - `RegistrationService.__init__(self, repo, user_client, event_client)`
   - `create_registration(data)`: validazione a monte; `user_client.get_user` (B01,
@@ -149,7 +149,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-F02, REQ-REG-B01, REQ-REG-B02, REQ-REG-B03, REQ-REG-B05, REQ-REG-B06, REQ-REG-B09, REQ-REG-F10_
   _Commit: `feat(registration): RegistrationService.create_registration with dependency checks [T-09]`_
 
-- [ ] 10. T-10 — RegistrationService: get, list e filtri
+- [x] 10. T-10 — RegistrationService: get, list e filtri
 
   - `get_registration(id)` (404 se assente); `list_registrations(filters, page,
     page_size)` con filtri `user_id`/`event_id`/`status` AND, `total` post-filtro
@@ -159,7 +159,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-F04, REQ-REG-F05_
   _Commit: `feat(registration): RegistrationService.get and list with filters [T-10]`_
 
-- [ ] 11. T-11 — RegistrationService: PATCH stato e transizioni B07
+- [x] 11. T-11 — RegistrationService: PATCH stato e transizioni B07
 
   - `patch_status(id, new_status)`: 404 se assente; `confirmed→cancelled` ok (libera il
     posto); `cancelled→confirmed`→422 `INVALID_STATUS_TRANSITION`; stesso stato → no-op
@@ -171,7 +171,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-F06, REQ-REG-B07, REQ-REG-F10_
   _Commit: `feat(registration): RegistrationService.patch_status with transition rules [T-11]`_
 
-- [ ] 12. T-12 — Routes HTTP complete (inclusi stats e PUT→405)
+- [x] 12. T-12 — Routes HTTP complete (inclusi stats e PUT→405)
 
   - Rotte Blueprint: `POST` (201+Location), `GET` lista (paginato+filtri),
     `GET /stats` (registrata **prima** di `/<id>`), `GET /<id>`, `PATCH /<id>`
@@ -187,7 +187,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-F02..F11, REQ-REG-B08_
   _Commit: `feat(registration): all HTTP routes incl stats and PUT 405 [T-12]`_
 
-- [ ] 13. T-13 — Test unitari completi (`tests/unit/`)
+- [x] 13. T-13 — Test unitari completi (`tests/unit/`)
 
   - `test_routes.py`: ogni endpoint (400/404/405/409/422/503); dipendenze mockate con
     `responses`; contratto con `flask_to_contract_dict`
@@ -212,7 +212,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-T01_
   _Commit: `test(registration): full unit test suite with >=80% coverage [T-13]`_
 
-- [ ] 14. T-14 — Aggiornamento `services.yaml` (user + event + registration)
+- [x] 14. T-14 — Aggiornamento `services.yaml` (user + event + registration)
 
   - Estendere `Exam/techconf-exam/services.yaml` con `registration` oltre a `user` ed
     `event`:
@@ -237,7 +237,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-F12, REQ-REG-F13_
   _Commit: `feat(registration): declare all three mandatory services in services.yaml [T-14]`_
 
-- [ ] 15. T-15 — Test di integrazione propri (`tests/integration/`)
+- [x] 15. T-15 — Test di integrazione propri (`tests/integration/`)
 
   - `test_registration_integration.py`: avvia **user**, **event** e **registration**
     reali su porte libere (`STORAGE_BACKEND=memory`), inietta gli `*_SERVICE_URL`
@@ -252,7 +252,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-T02_
   _Commit: `test(registration): own integration tests with three real services [T-15]`_
 
-- [ ] 16. T-16 — Collaudo obbligatorio completo e salvataggio `collaudo.txt`
+- [x] 16. T-16 — Collaudo obbligatorio completo e salvataggio `collaudo.txt`
 
   - Con user, event e registration dichiarati in `services.yaml`, eseguire dalla root
     `Exam/techconf-exam/`:
@@ -266,7 +266,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-T01, REQ-REG-T02, REQ-REG-B01..B09_
   _Commit: `docs(registration): mandatory acceptance output collaudo.txt [T-16]`_
 
-- [ ] 17. T-17 — Verifica dei checksum (file protetti intatti)
+- [x] 17. T-17 — Verifica dei checksum (file protetti intatti)
 
   - Verificare `Exam/techconf-exam/CHECKSUMS.sha256` con lo strumento disponibile
     (es. `sha256sum -c CHECKSUMS.sha256` o script Python equivalente su Windows)
@@ -277,7 +277,7 @@ senza implementare i task successivi.
   _Requirements: (vincolo §3/§8 Exam.MD)_
   _Commit: `docs(registration): verify protected files checksums [T-17]`_
 
-- [ ] 18. T-18 — Gestione bug reali (BUGS.md) — workflow §6.4/§6.5
+- [x] 18. T-18 — Gestione bug reali (BUGS.md) — workflow §6.4/§6.5
 
   - Per ogni test di collaudo fallito o bug reale trovato durante T-13/T-15/T-16:
     1. aprire **issue GitHub reale** (servizio, test fallito es. `IT-R06`, atteso vs
@@ -297,30 +297,30 @@ senza implementare i task successivi.
   _Requirements: (§6.5 Exam.MD — consegna)_
   _Commit: `docs: BUGS.md with real documented and closed bugs`_
 
-- [ ] 19. T-19 — README del servizio e verifica checklist di consegna
+- [x] 19. T-19 — README del servizio e verifica checklist di consegna
 
   - `services/registration-service/README.md`: dipendenze; avvio (env `PORT`,
     `USER_SERVICE_URL`, `EVENT_SERVICE_URL`, `STORAGE_BACKEND`, `DATA_DIR`; tre backend);
     test unit con coverage; integrazione propria; suite del docente (`-k registration`,
     `-m mandatory`); riferimenti `REQ-REG-*` e `T-01..T-20`
   - Verificare la **checklist di consegna §9** con evidenze reali:
-    - [ ] steering (4 file) e ≥1 hook funzionante (hook già presente; confermare
+    - [x] steering (4 file) e ≥1 hook funzionante (hook già presente; confermare
       esecuzione al salvataggio di un `.py` sotto `services/registration-service/`)
-    - [ ] specs dei 3 servizi obbligatori con requirements/design/tasks (tasks spuntati
+    - [x] specs dei 3 servizi obbligatori con requirements/design/tasks (tasks spuntati
       solo quando realmente eseguiti)
-    - [ ] `services.yaml` con i 3 servizi; backend memory/json/sqlite funzionanti
-    - [ ] coverage ≥ 80% per ogni servizio
-    - [ ] integration test propri per event e registration
-    - [ ] `collaudo.txt` dal run `-m mandatory` (T-16)
-    - [ ] `BUGS.md` con ≥2 bug reali chiusi (T-18)
-    - [ ] README presenti; file protetti non modificati (T-17)
+    - [x] `services.yaml` con i 3 servizi; backend memory/json/sqlite funzionanti
+    - [x] coverage ≥ 80% per ogni servizio
+    - [x] integration test propri per event e registration
+    - [x] `collaudo.txt` dal run `-m mandatory` (T-16)
+    - [x] `BUGS.md` con ≥2 bug reali chiusi (T-18)
+    - [x] README presenti; file protetti non modificati (T-17)
   - **Completamento:** README presente; ogni voce di checklist confermata con evidenza
     reale (nessuna voce spuntata senza prova)
 
   _Requirements: REQ-REG-T01_
   _Commit: `docs(registration): service README and delivery checklist verification [T-19]`_
 
-- [ ] 20. T-20 — Verifica finale e tag v1.0.0 (solo dopo completamento reale)
+- [x] 20. T-20 — Verifica finale e tag v1.0.0 (solo dopo completamento reale)
 
   - Rieseguire l'intera piattaforma: unit dei 3 servizi (`--cov-fail-under=80`),
     integrazione propria di event e registration, collaudo `-m mandatory` verde
