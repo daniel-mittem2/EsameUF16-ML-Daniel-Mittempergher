@@ -23,10 +23,15 @@ without depending on the repository's own exception type.
 """
 from __future__ import annotations
 
-from app.models import new_user_record, user_to_dict, utcnow_iso
+from app.models import DEFAULT_ROLE, new_user_record, user_to_dict, utcnow_iso
 from app.pagination import paginate
 from app.repository import AbstractUserRepository, EmailAlreadyExistsError
 from app.validators import VALID_ROLES
+
+# Mutable fields replaced wholesale by a PUT (REQ-USR-F07). ``id``,
+# ``created_at`` and ``updated_at`` are server-managed and never taken from the
+# client body.
+_MUTABLE_FIELDS = ("first_name", "last_name", "email", "company", "role")
 
 
 class EmailConflictError(Exception):
@@ -179,3 +184,129 @@ class UserService:
         records = self._repo.list_all(active_filters)
         items = [user_to_dict(record) for record in records]
         return paginate(items, page, page_size)
+
+    def replace_user(self, user_id: str, data: dict) -> dict:
+        """Replace every mutable field of an existing user (PUT, REQ-USR-F07).
+
+        PUT uses the ``UserCreate`` schema (already validated by the routes
+        layer): ``first_name``, ``last_name`` and ``email`` are required;
+        ``company`` and ``role`` are optional with the same defaults as POST
+        (``company`` -> ``None``, ``role`` -> ``"attendee"``). All mutable
+        fields are overwritten from ``data``; ``id`` and ``created_at`` are kept
+        from the stored record (REQ-USR-F07-AC5) and ``updated_at`` is refreshed
+        to the current timestamp (REQ-USR-F11-AC2).
+
+        The email is normalised to lower case (REQ-USR-B02) *before* the
+        uniqueness check. Updating a user's email to the value it already holds
+        does not raise a conflict (REQ-USR-B01-AC3); a value already used by a
+        *different* user does (REQ-USR-B01-AC2).
+
+        Args:
+            user_id: The UUID of the user to replace.
+            data: Validated ``UserCreate`` body (required fields present).
+
+        Returns:
+            The updated user record (the eight contract fields).
+
+        Raises:
+            UserNotFoundError: If no user with ``user_id`` exists
+                (REQ-USR-F07-AC3). The routes layer maps this to 404.
+            EmailConflictError: If the new email is already used by a different
+                user (REQ-USR-B01-AC2). The routes layer maps this to 409.
+        """
+        # Resource lookup first: a missing user is a 404 regardless of the body
+        # (REQ-USR-F07-AC3).
+        if self._repo.get(user_id) is None:
+            raise UserNotFoundError(f"No user with id {user_id!r}")
+
+        # Full replacement of every mutable field, applying POST-style defaults
+        # for the optional ones (REQ-USR-F07-AC2). Email normalised before the
+        # uniqueness comparison (REQ-USR-B02-AC3).
+        changes = {
+            "first_name": data["first_name"],
+            "last_name": data["last_name"],
+            "email": data["email"].lower(),
+            "company": data.get("company"),
+            "role": data.get("role", DEFAULT_ROLE),
+            "updated_at": utcnow_iso(),
+        }
+
+        return self._apply_update(user_id, changes)
+
+    def update_user(self, user_id: str, data: dict) -> dict:
+        """Partially update an existing user (PATCH, REQ-USR-F08).
+
+        The stored record is looked up **first**, so a missing user yields a 404
+        even when the body is empty (REQ-USR-F08-AC2). Only the fields present in
+        ``data`` are applied; absent fields keep their current values
+        (REQ-USR-F08-AC3). ``company`` may be patched to ``None`` explicitly to
+        clear it (REQ-USR-F08-AC4).
+
+        An empty body (``{}``) is idempotent: the record is returned unchanged
+        and ``updated_at`` is **not** refreshed (REQ-USR-F04-AC4,
+        REQ-USR-F11-AC2). Any non-empty change refreshes ``updated_at``.
+
+        A supplied ``email`` is normalised to lower case (REQ-USR-B02) before the
+        uniqueness check; reusing the user's own email is not a conflict
+        (REQ-USR-B01-AC3).
+
+        Args:
+            user_id: The UUID of the user to update.
+            data: Validated ``UserUpdate`` body (all fields optional).
+
+        Returns:
+            The (possibly unchanged) user record (the eight contract fields).
+
+        Raises:
+            UserNotFoundError: If no user with ``user_id`` exists
+                (REQ-USR-F08-AC2). The routes layer maps this to 404.
+            EmailConflictError: If a supplied email is already used by a
+                different user (REQ-USR-B01-AC2). The routes layer maps to 409.
+        """
+        # Resource lookup first: a missing user is a 404 even for an empty body
+        # (REQ-USR-F08-AC2).
+        record = self._repo.get(user_id)
+        if record is None:
+            raise UserNotFoundError(f"No user with id {user_id!r}")
+
+        # Apply only the mutable fields actually present in the body. Unknown
+        # keys have already been rejected by the routes-layer validator
+        # (REQ-USR-F04-AC3); guard here too so the service never persists a key
+        # outside the contract shape.
+        changes = {
+            field: data[field] for field in _MUTABLE_FIELDS if field in data
+        }
+
+        # Empty PATCH: nothing to change, updated_at left untouched
+        # (REQ-USR-F04-AC4, REQ-USR-F11-AC2).
+        if not changes:
+            return record
+
+        if "email" in changes:
+            changes["email"] = changes["email"].lower()  # REQ-USR-B02-AC2
+
+        changes["updated_at"] = utcnow_iso()  # REQ-USR-F11-AC2
+
+        return self._apply_update(user_id, changes)
+
+    def _apply_update(self, user_id: str, changes: dict) -> dict:
+        """Delegate the atomic write to the repository, mapping its exceptions.
+
+        The repository performs the "check email uniqueness (excluding self) +
+        write" sequence atomically under its lock (REQ-USR-B01, design §10) and
+        raises :class:`EmailAlreadyExistsError` on a cross-user collision, which
+        we translate into the service-level :class:`EmailConflictError`.
+
+        A ``None`` return from the repository means the record vanished between
+        our lookup and the write (a concurrent delete); treat it as not-found.
+        """
+        try:
+            updated = self._repo.update(user_id, changes)
+        except EmailAlreadyExistsError as exc:
+            raise EmailConflictError(
+                f"A user with email {changes.get('email')!r} already exists"
+            ) from exc
+
+        if updated is None:
+            raise UserNotFoundError(f"No user with id {user_id!r}")
+        return updated
