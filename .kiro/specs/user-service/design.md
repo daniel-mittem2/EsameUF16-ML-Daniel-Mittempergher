@@ -427,14 +427,14 @@ class AbstractUserRepository(ABC):
 `get_by_email` è separato da `get` perché la ricerca per email è usata dal
 service layer nel controllo unicità. Tutti i backend lo implementano.
 
-La factory `get_repository()` in `repository.py` legge `config.STORAGE_BACKEND`
+La factory `get_repository(backend, data_dir)` in `repository.py` riceve i valori dalla configurazione
 e restituisce l'istanza corretta. Chiamata una volta sola in `create_app()`.
 
 ### MemoryUserRepository
 
 - dizionario in-memoria `{id: record}`
 - nessuna persistenza tra riavvii
-- thread-safe per test single-process (nessun lock necessario)
+- un RLock condiviso per istanza protegge letture e scritture; create/update verificano unicità e scrivono sotto lo stesso lock (§10)
 - `get_by_email`: iterazione lineare sul dizionario, case-insensitive
 
 ### JsonUserRepository
@@ -448,10 +448,7 @@ DATA_DIR/users.json   ← lista di record [{id, ...}, ...]
   directory, poi `os.replace()` atomico — evita file corrotto in caso di crash
 - `DATA_DIR` creato automaticamente se assente (`os.makedirs(exist_ok=True)`)
 - riapertura dati persistenti: al prossimo avvio legge `users.json` esistente
-- **unicità email concorrente**: `os.replace()` è atomico su filesystem POSIX;
-  su Windows è atomico dalla Python 3.3+. Il service layer esegue il check-then-
-  write in sequenza sincrona; Flask development server è single-threaded. Per
-  workload multi-threaded la protezione rimane nel service layer (vedi §10).
+- **unicità email concorrente**: il RLock condiviso protegge controllo e scrittura in un unico processo (§10). os.replace impedisce scritture parziali ma non sostituisce il lock. Letture e scritture usano la stessa istanza di repository.
 
 ### SqliteUserRepository
 
@@ -546,11 +543,7 @@ il vincolo `UNIQUE INDEX LOWER(email)` cattura eventuali duplicati residui e
 `IntegrityError` viene propagato come `EmailAlreadyExistsError`. Ogni write
 usa `with conn:` per commit/rollback automatico.
 
-In alternativa è possibile aprire una **connessione distinta per thread**
-(`threading.local()`) con `isolation_level=None` (autocommit) e
-`BEGIN EXCLUSIVE` esplicito per le sezioni critiche; questa variante è più
-robusta ma più complessa. La scelta tra le due va documentata in design.md
-del servizio prima dell'implementazione — il task T-05 la richiede esplicitamente.
+La scelta definitiva è una connessione SQLite condivisa, protetta dal RLock della stessa istanza per letture, scritture e chiusura; non si introduce una variante con connessioni per thread.
 
 **Le regole di business rimangono in `service.py`:** il lock vive nel repository,
 non nel service layer. `service.py` chiama `repo.create(record)` e cattura
@@ -702,7 +695,7 @@ Casi verificati:
 
 ```bash
 # Dalla directory del servizio
-py -3.12 -m pytest tests/unit -v --cov=app --cov-report=term-missing
+py -3.12 -m pytest tests/unit -v --cov=app --cov-report=term-missing --cov-fail-under=80
 
 # Solo test di contratto
 py -3.12 -m pytest tests/unit/test_contracts.py -v
