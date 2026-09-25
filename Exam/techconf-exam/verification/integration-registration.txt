@@ -1,0 +1,12 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.14, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\mittd\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe
+rootdir: C:\Users\mittd\OneDrive\Desktop\Esame\EsameUF16-ML-Daniel-Mittempergher\Exam\techconf-exam\services\registration-service
+plugins: cov-7.1.0
+collecting ... collected 4 items
+
+tests/integration/test_registration_integration.py::test_register_attendee_to_published_event_returns_201_confirmed PASSED [ 25%]
+tests/integration/test_registration_integration.py::test_register_with_unknown_user_returns_422_reference_not_found PASSED [ 50%]
+tests/integration/test_registration_integration.py::test_register_with_unknown_event_returns_422_reference_not_found PASSED [ 75%]
+tests/integration/test_registration_integration.py::test_register_with_dead_dependencies_returns_503 PASSED [100%]
+
+============================== 4 passed in 4.59s ==============================

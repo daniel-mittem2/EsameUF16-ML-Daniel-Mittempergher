@@ -1,4 +1,4 @@
-# BUGS.md — Bug reali documentati e chiusi
+# BUGS.md — Bug corretti; chiusura GitHub in sospeso
 
 Workflow di riferimento: **§6.4 / §6.5** (gestione bug). Questo file registra
 **solo difetti realmente riscontrati** durante l'investigazione del task T-18
@@ -6,12 +6,11 @@ Workflow di riferimento: **§6.4 / §6.5** (gestione bug). Questo file registra
 tipo (implementazione/spec), requisito violato, atteso vs ottenuto, causa radice,
 test di regressione e commit di fix.
 
-> **Nota su issue e commit.** In questo ambiente la CLI `gh` **non è disponibile**,
-> quindi le issue GitHub reali vanno aperte manualmente dal browser (OPEN-REG-02).
-> I numeri di issue qui sotto sono **segnaposto** (`<ISSUE #TBD by user>`): l'utente
-> apre l'issue e sostituisce il numero, poi il commit di fix va creato con il
-> messaggio indicato — che include `(closes #N)` con lo stesso numero. I test di
-> regressione sono già scritti e verdi; i fix sono già applicati sul working tree.
+> **Stato verificato il 25 settembre 2026.** Entrambi i fix sono già nel commit
+> `a418e86` su `main`; non sono modifiche in attesa di commit. I test di
+> regressione sono verdi. La verifica pubblica di GitHub non ha restituito issue;
+> manca ancora un collegamento autenticato per pubblicarle e chiuderle.
+> I segnaposto non sono numeri di issue reali e il workflow §6.5 resta incompleto.
 
 ---
 
@@ -23,7 +22,7 @@ test di regressione e commit di fix.
 | BUG-002 | event-service | **implementazione** | REQ-EVT-F03-AC5 | Fix applicato, test di regressione verde |
 
 Consegna §6.5: **2 bug reali**, entrambi di **implementazione** (requisito: ≥2 bug,
-≥1 impl → soddisfatto).
+≥1 impl → soddisfatto per numero e tipo; chiusura formale ancora mancante).
 
 ---
 
@@ -59,7 +58,7 @@ Consegna §6.5: **2 bug reali**, entrambi di **implementazione** (requisito: ≥
   - `test_memory_create_returns_isolated_copy`
   - `test_memory_list_all_returns_isolated_copies`
   - `test_memory_set_status_returns_isolated_copy`
-- **Commit di fix (da creare con il numero issue reale):**
+- **Commit del fix esistente:** `a418e86`. Messaggio di collegamento da usare dopo la pubblicazione dell’issue:
   `fix(registration): isolate memory backend records via deepcopy (closes #N)`
 - **Note:** lo stesso pattern (backend `memory` che restituisce riferimenti mentre
   `json`/`sqlite` copiano) è presente anche in `event-service` e `user-service`.
@@ -100,7 +99,7 @@ Consegna §6.5: **2 bug reali**, entrambi di **implementazione** (requisito: ≥
   `services/event-service/tests/unit/test_regression_bugs.py`
   - `test_validate_date_rejects_iso_week_dates` (parametrizzato: `2026-W40-1`, `2026-W01-7`)
   - `test_validate_event_create_rejects_iso_week_date`
-- **Commit di fix (da creare con il numero issue reale):**
+- **Commit del fix esistente:** `a418e86`. Messaggio di collegamento da usare dopo la pubblicazione dell’issue:
   `fix(event): reject ISO week dates in validate_date, require YYYY-MM-DD (closes #N)`
 
 ---
@@ -121,8 +120,8 @@ Consegna §6.5: **2 bug reali**, entrambi di **implementazione** (requisito: ≥
 
 1. Aprire dal browser le due issue GitHub reali (una per BUG-001, una per BUG-002).
 2. Sostituire `<ISSUE #TBD by user>` con i numeri reali qui sopra.
-3. Creare i commit di fix con i messaggi indicati, includendo `(closes #N)` con il
-   numero di issue corrispondente; poi merge su `main`.
+3. Collegare ogni issue al fix esistente `a418e86` e ai test di regressione, quindi
+   chiuderla con la motivazione reale. Non ricreare né retrodatare il fix già committato.
 
 ---
 

@@ -51,29 +51,29 @@ print("2. Matcher test: OK")
 
 # ── 3. Script syntax check ───────────────────────────────────────────────────
 script = ROOT / ".kiro" / "scripts" / "run_unit_tests.py"
-result = subprocess.run(["py", "-3.12", "-m", "py_compile", str(script)], capture_output=True, text=True)
+result = subprocess.run([sys.executable, "-m", "py_compile", str(script)], capture_output=True, text=True)
 assert result.returncode == 0, f"Syntax error:\n{result.stderr}"
 print("3. Script syntax: OK")
 
 # ── 4. Dry-run: empty stdin (no file path) ───────────────────────────────────
-r = subprocess.run(["py", "-3.12", str(script)], input="", capture_output=True, text=True, cwd=str(ROOT))
+r = subprocess.run([sys.executable, str(script)], input="", capture_output=True, text=True, cwd=str(ROOT))
 assert r.returncode == 0, f"dry-run (empty stdin) exited {r.returncode}"
 assert "skipping" in r.stdout.lower(), f"expected skip message, got: {r.stdout!r}"
 print(f"4. Dry-run empty stdin: OK — {r.stdout.strip()!r}")
 
 # ── 5. Dry-run: path outside services/ ──────────────────────────────────────
 payload = json.dumps({"file": str(ROOT / "README.md")})
-r = subprocess.run(["py", "-3.12", str(script)], input=payload, capture_output=True, text=True, cwd=str(ROOT))
+r = subprocess.run([sys.executable, str(script)], input=payload, capture_output=True, text=True, cwd=str(ROOT))
 assert r.returncode == 0, f"out-of-scope path exited {r.returncode}"
 # no output expected (silent skip)
 print(f"5. Dry-run out-of-scope path: OK — stdout={r.stdout.strip()!r}")
 
-# ── 6. Dry-run: path inside services/ but tests/unit/ not yet created ────────
-fake_path = str(ROOT / "Exam" / "techconf-exam" / "services" / "user-service" / "app" / "routes.py")
-payload = json.dumps({"file": fake_path})
-r = subprocess.run(["py", "-3.12", str(script)], input=payload, capture_output=True, text=True, cwd=str(ROOT))
-assert r.returncode == 0, f"missing tests/unit exited {r.returncode}"
-print(f"6. Dry-run service path (no tests/unit yet): OK — stdout={r.stdout.strip()!r}")
+# ── 6. Real service path: run existing unit tests ────────
+service_path = str(ROOT / "Exam" / "techconf-exam" / "services" / "user-service" / "app" / "routes.py")
+payload = json.dumps({"file": service_path})
+r = subprocess.run([sys.executable, str(script)], input=payload, capture_output=True, text=True, cwd=str(ROOT))
+assert r.returncode == 0, f"service unit tests exited {r.returncode}"
+print(f"6. Service path: actual unit tests: OK — stdout={r.stdout.strip()!r}")
 
 print()
 print("All hook checks passed.")

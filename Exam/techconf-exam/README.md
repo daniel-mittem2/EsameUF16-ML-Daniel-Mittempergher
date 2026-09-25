@@ -189,3 +189,33 @@ sha256sum -c CHECKSUMS.sha256   # oppure lo script di verifica equivalente
 `BUGS.md` documenta i bug reali trovati, con requisito, causa, test di regressione e
 commit di fix. Il testo pronto delle issue GitHub è in `.github/ISSUES/`; le issue vanno
 pubblicate manualmente sul repository e i loro numeri riportati in `BUGS.md`.
+
+## Verifica della consegna — 25 settembre 2026
+
+I risultati rieseguiti sono conservati in `verification/`; `results.json`
+contiene i codici di uscita reali. `collaudo.txt` viene aggiornato solo dopo
+un collaudo superato. Il codice applicativo e i file protetti non sono cambiati.
+
+I test propri avviano i sottoprocessi con `sys.executable`, così usano lo stesso
+Python e le stesse dipendenze del test principale. Il manifest usa `python -m app`:
+prima del collaudo attivare un ambiente Python 3.12 con tutte le dipendenze:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r services/user-service/requirements-dev.txt -r services/event-service/requirements-dev.txt -r services/registration-service/requirements-dev.txt
+python -m pytest tests/integration -m mandatory -v
+```
+
+Il comando `python` sul PATH deve appartenere all’ambiente appena attivato.
+La suite protetta può lasciare processi figli sulle porte 15001–15003 e
+15102–15103 su Windows: prima di ripeterla chiudere esclusivamente i processi
+di prova avviati dalla propria esecuzione. Non modificare l’harness del docente.
+
+L’hook è stato verificato eseguendo il suo script con payload simulati per tutti
+i servizi. L’attivazione al salvataggio dentro Kiro resta da osservare nell’IDE.
+Configurazione conforme allo schema corrente: https://kiro.dev/docs/hooks/.
+
+Restano da chiudere le due issue GitHub e da aggiornare/pubblicare il tag finale
+solo dopo la chiusura dei punti obbligatori. Nessuna issue o attivazione IDE viene
+considerata completata senza riscontro reale.

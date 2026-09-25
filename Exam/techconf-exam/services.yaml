@@ -1,13 +1,13 @@
 services:
   user:
     cwd: services/user-service
-    command: py -3.12 -m app
+    command: python -m app
     health_path: /health
   event:
     cwd: services/event-service
-    command: py -3.12 -m app
+    command: python -m app
     health_path: /health
   registration:
     cwd: services/registration-service
-    command: py -3.12 -m app
+    command: python -m app
     health_path: /health

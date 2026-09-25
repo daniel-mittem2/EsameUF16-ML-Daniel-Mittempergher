@@ -11,3 +11,6 @@ __pycache__/
 .coverage.*
 htmlcov/
 coverage.xml
+
+# Local Python environments
+.venv/

@@ -1,0 +1,17 @@
+OK contracts/openapi/event-service.yaml
+OK contracts/openapi/feedback-service.yaml
+OK contracts/openapi/notification-service.yaml
+OK contracts/openapi/registration-service.yaml
+OK contracts/openapi/user-service.yaml
+OK contracts/validator.py
+OK tests/integration/conftest.py
+OK tests/integration/harness.py
+OK tests/integration/pytest.ini
+OK tests/integration/requirements.txt
+OK tests/integration/test_event.py
+OK tests/integration/test_feedback.py
+OK tests/integration/test_journey_full.py
+OK tests/integration/test_journey_mandatory.py
+OK tests/integration/test_notification.py
+OK tests/integration/test_registration.py
+OK tests/integration/test_user.py

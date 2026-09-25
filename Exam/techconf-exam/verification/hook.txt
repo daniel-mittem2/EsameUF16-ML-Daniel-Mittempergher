@@ -1,0 +1,94 @@
+Hook command simulation: user; exit=0
+[hook] Running unit tests for: user-service
+============================= test session starts =============================
+platform win32 -- Python 3.12.14, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\mittd\OneDrive\Desktop\Esame\EsameUF16-ML-Daniel-Mittempergher\Exam\techconf-exam\services\user-service
+plugins: cov-7.1.0
+collected 168 items
+
+tests\unit\test_app_factory.py .....                                     [  2%]
+tests\unit\test_config.py ......                                         [  6%]
+tests\unit\test_contracts.py .......                                     [ 10%]
+tests\unit\test_repository.py .......................................    [ 33%]
+tests\unit\test_routes.py ............................                   [ 50%]
+tests\unit\test_service.py ............................................. [ 77%]
+.                                                                        [ 77%]
+tests\unit\test_support_modules.py ..................................... [100%]
+
+============================= 168 passed in 1.10s =============================
+
+
+Hook command simulation: event; exit=0
+[hook] Running unit tests for: event-service
+============================= test session starts =============================
+platform win32 -- Python 3.12.14, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\mittd\OneDrive\Desktop\Esame\EsameUF16-ML-Daniel-Mittempergher\Exam\techconf-exam\services\event-service
+plugins: cov-7.1.0
+collected 222 items
+
+tests\unit\test_app_factory.py .....                                     [  2%]
+tests\unit\test_config.py ............                                   [  7%]
+tests\unit\test_contracts.py .......                                     [ 10%]
+tests\unit\test_http_client.py ...............                           [ 17%]
+tests\unit\test_json_backend.py .................                        [ 25%]
+tests\unit\test_regression_bugs.py ...                                   [ 26%]
+tests\unit\test_repository.py ..............                             [ 32%]
+tests\unit\test_routes.py .............................                  [ 45%]
+tests\unit\test_service.py ............................................. [ 66%]
+....                                                                     [ 68%]
+tests\unit\test_sqlite_backend.py .......................                [ 78%]
+tests\unit\test_support_modules.py ..................................... [ 95%]
+...........                                                              [100%]
+
+============================= 222 passed in 1.78s =============================
+
+
+Hook command simulation: registration; exit=0
+[hook] Running unit tests for: registration-service
+============================= test session starts =============================
+platform win32 -- Python 3.12.14, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\mittd\OneDrive\Desktop\Esame\EsameUF16-ML-Daniel-Mittempergher\Exam\techconf-exam\services\registration-service
+plugins: cov-7.1.0
+collected 208 items
+
+tests\unit\test_app_factory.py ......                                    [  2%]
+tests\unit\test_concurrency.py ..                                        [  3%]
+tests\unit\test_config.py ........                                       [  7%]
+tests\unit\test_contracts.py ........                                    [ 11%]
+tests\unit\test_http_client.py ....................                      [ 21%]
+tests\unit\test_regression_bugs.py ....                                  [ 23%]
+tests\unit\test_repository.py .......................................... [ 43%]
+.............                                                            [ 49%]
+tests\unit\test_routes.py ............................                   [ 62%]
+tests\unit\test_service.py ............................                  [ 76%]
+tests\unit\test_support_modules.py ..................................... [ 94%]
+............                                                             [100%]
+
+============================= 208 passed in 1.75s =============================
+
+
+Configuration validation exit=0
+1. Schema validation: OK
+   version : v1
+   trigger : PostFileSave
+   matcher : Exam[\\/]techconf-exam[\\/]services[\\/][^\\/]+[\\/].*\.py$
+   command : py -3.12 .kiro/scripts/run_unit_tests.py
+   OK: match=True expected=True  C:\Users\x\Exam\techconf-exam\services\user-service\app\rout
+   OK: match=True expected=True  C:\Users\x\Exam\techconf-exam\services\event-service\routes.
+   OK: match=True expected=True  Exam/techconf-exam/services/user-service/app/routes.py
+   OK: match=False expected=False  C:\Users\x\Exam\techconf-exam\contracts\openapi\user-service
+   OK: match=False expected=False  C:\Users\x\Exam\techconf-exam\tests\integration\test_user.py
+   OK: match=False expected=False  C:\Users\x\unrelated\file.py
+2. Matcher test: OK
+3. Script syntax: OK
+4. Dry-run empty stdin: OK — '[hook] No file path received â€” skipping.'
+5. Dry-run out-of-scope path: OK — stdout=''
+6. Service path: actual unit tests: OK — stdout='[hook] Running unit tests for: user-service\n============================= test session starts =============================\nplatform win32 -- Python 3.12.14, pytest-8.4.2, pluggy-1.6.0\nrootdir: C:\\Users\\mittd\\OneDrive\\Desktop\\Esame\\EsameUF16-ML-Daniel-Mittempergher\\Exam\\techconf-exam\\services\\user-service\nplugins: cov-7.1.0\ncollected 168 items\n\ntests\\unit\\test_app_factory.py .....                                     [  2%]\ntests\\unit\\test_config.py ......                                         [  6%]\ntests\\unit\\test_contracts.py .......                                     [ 10%]\ntests\\unit\\test_repository.py .......................................    [ 33%]\ntests\\unit\\test_routes.py ............................                   [ 50%]\ntests\\unit\\test_service.py ............................................. [ 77%]\n.                                                                        [ 77%]\ntests\\unit\\test_support_modules.py ..................................... [100%]\n\n============================= 168 passed in 1.10s ============================='
+
+All hook checks passed.
+
+MANUAL VERIFICATION REQUIRED (cannot automate from terminal):
+  Open Kiro IDE → Explorer panel → 'Agent Hooks' section.
+  Confirm 'Run Unit Tests on Python Save' is listed and enabled (toggle ON).
+  To test activation: save any .py file under services/user-service/ after
+  scaffolding and observe the hook output in the Kiro hook log panel.

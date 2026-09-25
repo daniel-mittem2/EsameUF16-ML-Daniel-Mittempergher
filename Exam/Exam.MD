@@ -462,7 +462,7 @@ Non esiste una struttura "giusta" imposta dalla traccia: **decidere come organiz
 ## 9. Checklist di consegna
 
 - [X] `.kiro/steering/` (4 file, con `structure.md` che risponde alle domande del Â§7) e almeno 1 hook
-- [X] `.kiro/specs/<svc>/` con requirements, design e tasks (tutti spuntati) per i 3 servizi obbligatori
+- [ ] `.kiro/specs/<svc>/` con requirements, design e tasks per i 3 servizi obbligatori — implementazione completata; task finali T-18/T-19/T-20 aperti per issue, trigger Kiro e consegna
 - [X] `services.yaml` compilato; servizi avviabili, backend `memory` / `json` / `sqlite` funzionanti
 - [X] Unit test con coverage â‰¥ 80% per ogni servizio
 - [X] Integration test propri per event-service e registration-service
@@ -470,4 +470,4 @@ Non esiste una struttura "giusta" imposta dalla traccia: **decidere come organiz
 - [ ] `BUGS.md` con almeno 2 bug chiusi — bug documentati e corretti (test di regressione verdi), ma issue GitHub non ancora pubblicate: chiusura formale in sospeso
 - [X] `README.md` (avvio, variabili d'ambiente, comandi di test)
 - [X] File in `contracts/` e `tests/integration/` **non modificati**
-- [X] Tag `v1.0.0` sul `main`
+- [ ] Tag `v1.0.0` finale sul `main` — tag locale presente su `da09934`, da allineare solo dopo la chiusura dei punti obbligatori

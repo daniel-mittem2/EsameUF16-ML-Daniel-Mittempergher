@@ -1,0 +1,38 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.14, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\mittd\OneDrive\Desktop\Esame\EsameUF16-ML-Daniel-Mittempergher\Exam\techconf-exam\services\user-service
+plugins: cov-7.1.0
+collected 168 items
+
+tests\unit\test_app_factory.py .....                                     [  2%]
+tests\unit\test_config.py ......                                         [  6%]
+tests\unit\test_contracts.py .......                                     [ 10%]
+tests\unit\test_repository.py .......................................    [ 33%]
+tests\unit\test_routes.py ............................                   [ 50%]
+tests\unit\test_service.py ............................................. [ 77%]
+.                                                                        [ 77%]
+tests\unit\test_support_modules.py ..................................... [100%]
+
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.14-final-0 _______________
+
+Name                             Stmts   Miss  Cover   Missing
+--------------------------------------------------------------
+app\__init__.py                     34      0   100%
+app\__main__.py                      4      4     0%   8-12
+app\backends\__init__.py             0      0   100%
+app\backends\json_backend.py        90      9    90%   63, 66, 111, 113, 122, 125-127, 138
+app\backends\memory.py              57      0   100%
+app\backends\sqlite_backend.py      93      1    99%   170
+app\config.py                       15      0   100%
+app\errors.py                       13      0   100%
+app\models.py                       11      0   100%
+app\pagination.py                   41      5    88%   36, 38, 41-43
+app\repository.py                   31      0   100%
+app\routes.py                       90      4    96%   180, 210, 220-221
+app\service.py                      67      1    99%   338
+app\validators.py                   75      5    93%   78, 81, 87, 144, 148
+--------------------------------------------------------------
+TOTAL                              621     29    95%
+Required test coverage of 80% reached. Total coverage: 95.33%
+============================= 168 passed in 1.94s =============================

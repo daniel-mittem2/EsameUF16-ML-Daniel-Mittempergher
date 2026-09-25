@@ -277,7 +277,7 @@ senza implementare i task successivi.
   _Requirements: (vincolo §3/§8 Exam.MD)_
   _Commit: `docs(registration): verify protected files checksums [T-17]`_
 
-- [x] 18. T-18 — Gestione bug reali (BUGS.md) — workflow §6.4/§6.5
+- [ ] 18. T-18 — Gestione bug reali (BUGS.md) — workflow §6.4/§6.5
 
   - Per ogni test di collaudo fallito o bug reale trovato durante T-13/T-15/T-16:
     1. aprire **issue GitHub reale** (servizio, test fallito es. `IT-R06`, atteso vs
@@ -297,14 +297,14 @@ senza implementare i task successivi.
   _Requirements: (§6.5 Exam.MD — consegna)_
   _Commit: `docs: BUGS.md with real documented and closed bugs`_
 
-- [x] 19. T-19 — README del servizio e verifica checklist di consegna
+- [ ] 19. T-19 — README del servizio e verifica checklist di consegna
 
   - `services/registration-service/README.md`: dipendenze; avvio (env `PORT`,
     `USER_SERVICE_URL`, `EVENT_SERVICE_URL`, `STORAGE_BACKEND`, `DATA_DIR`; tre backend);
     test unit con coverage; integrazione propria; suite del docente (`-k registration`,
     `-m mandatory`); riferimenti `REQ-REG-*` e `T-01..T-20`
   - Verificare la **checklist di consegna §9** con evidenze reali:
-    - [x] steering (4 file) e ≥1 hook funzionante (hook già presente; confermare
+    - [ ] steering (4 file) e ≥1 hook funzionante (script verificato; confermare
       esecuzione al salvataggio di un `.py` sotto `services/registration-service/`)
     - [x] specs dei 3 servizi obbligatori con requirements/design/tasks (tasks spuntati
       solo quando realmente eseguiti)
@@ -312,7 +312,7 @@ senza implementare i task successivi.
     - [x] coverage ≥ 80% per ogni servizio
     - [x] integration test propri per event e registration
     - [x] `collaudo.txt` dal run `-m mandatory` (T-16)
-    - [x] `BUGS.md` con ≥2 bug reali chiusi (T-18)
+    - [ ] `BUGS.md` con ≥2 bug reali chiusi (T-18): fix verificati, issue non pubblicate
     - [x] README presenti; file protetti non modificati (T-17)
   - **Completamento:** README presente; ogni voce di checklist confermata con evidenza
     reale (nessuna voce spuntata senza prova)
@@ -320,7 +320,7 @@ senza implementare i task successivi.
   _Requirements: REQ-REG-T01_
   _Commit: `docs(registration): service README and delivery checklist verification [T-19]`_
 
-- [x] 20. T-20 — Verifica finale e tag v1.0.0 (solo dopo completamento reale)
+- [ ] 20. T-20 — Verifica finale e tag v1.0.0 (solo dopo completamento reale)
 
   - Rieseguire l'intera piattaforma: unit dei 3 servizi (`--cov-fail-under=80`),
     integrazione propria di event e registration, collaudo `-m mandatory` verde
@@ -375,3 +375,7 @@ senza implementare i task successivi.
 | OPEN-REG-02 | Issue GitHub | `gh` CLI non disponibile in ambiente: pubblicare le issue reali dal browser prima di chiuderle nei commit |
 | OPEN-REG-03 | Hook su file registration | Verificare l'esecuzione al primo salvataggio di un `.py` sotto `services/registration-service/` |
 | OPEN-REG-04 | Tag `v1.0.0` | Creare solo dopo il completamento reale (T-20); push solo su indicazione esplicita |
+
+## Verifica del 25 settembre 2026
+
+I log in `Exam/techconf-exam/verification/` documentano i test effettivi. T-18, T-19 e T-20 rimangono aperti per la chiusura delle issue, la verifica del trigger in Kiro e il tag della consegna finale. Il test dello script hook con payload simulato non prova l’attivazione del trigger nell’IDE.

@@ -82,7 +82,7 @@ def main() -> int:
     print(f"[hook] Running unit tests for: {svc_name}", flush=True)
 
     result = subprocess.run(
-        ["py", "-3.12", "-m", "pytest", str(tests_dir), "-v", "--tb=short", "-q"],
+        [sys.executable, "-m", "pytest", str(tests_dir), "-v", "--tb=short", "-q"],
         cwd=str(svc_dir),
     )
     return result.returncode

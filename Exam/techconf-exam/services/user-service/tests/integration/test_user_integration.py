@@ -21,6 +21,7 @@ from __future__ import annotations
 import os
 import socket
 import subprocess
+import sys
 import time
 import uuid
 from pathlib import Path
@@ -81,7 +82,7 @@ def live_server():
     env = {**os.environ, "PORT": str(port), "STORAGE_BACKEND": "memory"}
 
     proc = subprocess.Popen(
-        ["py", "-3.12", "-m", "app"],
+        [sys.executable, "-m", "app"],
         cwd=str(SERVICE_DIR),
         env=env,
     )

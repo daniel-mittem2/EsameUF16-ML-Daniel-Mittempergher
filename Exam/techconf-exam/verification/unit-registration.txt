@@ -1,0 +1,43 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.14, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\mittd\OneDrive\Desktop\Esame\EsameUF16-ML-Daniel-Mittempergher\Exam\techconf-exam\services\registration-service
+plugins: cov-7.1.0
+collected 208 items
+
+tests\unit\test_app_factory.py ......                                    [  2%]
+tests\unit\test_concurrency.py ..                                        [  3%]
+tests\unit\test_config.py ........                                       [  7%]
+tests\unit\test_contracts.py ........                                    [ 11%]
+tests\unit\test_http_client.py ....................                      [ 21%]
+tests\unit\test_regression_bugs.py ....                                  [ 23%]
+tests\unit\test_repository.py .......................................... [ 43%]
+.............                                                            [ 49%]
+tests\unit\test_routes.py ............................                   [ 62%]
+tests\unit\test_service.py ............................                  [ 76%]
+tests\unit\test_support_modules.py ..................................... [ 94%]
+............                                                             [100%]
+
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.14-final-0 _______________
+
+Name                             Stmts   Miss  Cover   Missing
+--------------------------------------------------------------
+app\__init__.py                     48      0   100%
+app\__main__.py                      4      4     0%   12-16
+app\backends\__init__.py             0      0   100%
+app\backends\json_backend.py        89      3    97%   82, 85, 154
+app\backends\memory.py              59      0   100%
+app\backends\sqlite_backend.py      90      2    98%   184-187
+app\config.py                       17      0   100%
+app\errors.py                       18      0   100%
+app\http_client.py                  26      0   100%
+app\models.py                       11      0   100%
+app\pagination.py                   41      5    88%   38, 40, 43-45
+app\repository.py                   30      0   100%
+app\routes.py                       88      3    97%   172-173, 234
+app\service.py                      91      0   100%
+app\validators.py                   65      2    97%   43, 142
+--------------------------------------------------------------
+TOTAL                              677     19    97%
+Required test coverage of 80% reached. Total coverage: 97.19%
+============================= 208 passed in 3.21s =============================

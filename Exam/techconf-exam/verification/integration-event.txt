@@ -1,0 +1,11 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.14, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\mittd\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe
+rootdir: C:\Users\mittd\OneDrive\Desktop\Esame\EsameUF16-ML-Daniel-Mittempergher\Exam\techconf-exam\services\event-service
+plugins: cov-7.1.0
+collecting ... collected 3 items
+
+tests/integration/test_event_integration.py::test_create_event_with_real_organizer_returns_201_draft PASSED [ 33%]
+tests/integration/test_event_integration.py::test_create_event_with_unknown_organizer_returns_422_reference_not_found PASSED [ 66%]
+tests/integration/test_event_integration.py::test_create_event_with_dead_dependency_returns_503 PASSED [100%]
+
+============================== 3 passed in 5.18s ==============================

@@ -41,6 +41,7 @@ from __future__ import annotations
 import os
 import socket
 import subprocess
+import sys
 import time
 import uuid
 from pathlib import Path
@@ -112,7 +113,7 @@ def _start_service(service_dir: Path, env_overrides: dict) -> subprocess.Popen:
     """
     env = {**os.environ, **env_overrides}
     return subprocess.Popen(
-        ["py", "-3.12", "-m", "app"],
+        [sys.executable, "-m", "app"],
         cwd=str(service_dir),
         env=env,
     )
