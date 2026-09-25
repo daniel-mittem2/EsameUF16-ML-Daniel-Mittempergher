@@ -1,0 +1,5 @@
+services:
+  user:
+    cwd: services/user-service
+    command: py -3.12 -m app
+    health_path: /health
