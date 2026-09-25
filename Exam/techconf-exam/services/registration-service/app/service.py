@@ -216,6 +216,62 @@ class RegistrationService:
         updated = self._repo.set_status(reg_id, new_status, utcnow_iso())
         return registration_to_dict(updated)
 
+    def delete_registration(self, reg_id: str) -> None:
+        """Delete the registration ``reg_id`` (REQ-REG-F07).
+
+        Physically removes the record from the repository. Raises
+        :class:`ServiceError` with code ``NOT_FOUND`` when no record with
+        ``reg_id`` exists (REQ-REG-F07-AC2). This handler never calls a
+        dependency (REQ-REG-F07-AC3). DELETE is a physical removal, distinct
+        from the ``cancelled`` status transition (design/requirements note).
+        """
+        deleted = self._repo.delete(reg_id)
+        if not deleted:
+            raise ServiceError(
+                errors.NOT_FOUND,
+                "registration not found",
+                {"id": reg_id},
+            )
+
+    def stats(self, event_id: str) -> dict:
+        """Return registration statistics for ``event_id`` (REQ-REG-B08).
+
+        The event is fetched from event-service: a 404 maps to
+        :class:`ServiceError` with code ``NOT_FOUND`` (404) — note this is a
+        plain ``NOT_FOUND``, **not** ``REFERENCE_NOT_FOUND``, per REQ-REG-B08-AC3
+        and the contract — while an unreachable dependency maps to
+        ``DEPENDENCY_UNAVAILABLE`` (503) (REQ-REG-B08-AC5, REQ-REG-B09).
+
+        ``capacity`` is read from the event; ``confirmed`` is counted locally via
+        ``repo.count_confirmed``; ``available = capacity - confirmed``
+        (REQ-REG-B08-AC1/AC2). Returns a dict conforming to the
+        ``RegistrationStats`` schema.
+        """
+        try:
+            event = self._event_client.get_event(event_id)
+        except ReferenceNotFoundError as exc:
+            raise ServiceError(
+                errors.NOT_FOUND,
+                "event not found",
+                {"event_id": event_id},
+            ) from exc
+        except DependencyUnavailableError as exc:
+            raise ServiceError(
+                errors.DEPENDENCY_UNAVAILABLE,
+                "event-service is unavailable",
+                {"dependency": "event-service"},
+            ) from exc
+
+        capacity = event.get("capacity")
+        confirmed = self._repo.count_confirmed(event_id)
+        available = capacity - confirmed
+        return {
+            "event_id": event_id,
+            "capacity": capacity,
+            "confirmed": confirmed,
+            "available": available,
+        }
+
     def list_registrations(
         self, filters: dict, page: int, page_size: int
     ) -> dict:

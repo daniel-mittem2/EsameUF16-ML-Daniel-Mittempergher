@@ -30,6 +30,7 @@ from flask import Flask, jsonify
 from app import errors
 from app.http_client import EventServiceClient, UserServiceClient
 from app.repository import AbstractRegistrationRepository, get_repository
+from app.routes import registrations_bp
 
 __all__ = ["create_app"]
 
@@ -175,8 +176,7 @@ def create_app(
     app.config["EVENT_CLIENT"] = event_client
 
     _register_health(app)
-    # T-12: register the complete registrations Blueprint
-    # (``app.routes.registrations_bp``) here.
+    app.register_blueprint(registrations_bp)  # T-12: complete registrations Blueprint
     _register_error_handlers(app)
 
     return app
