@@ -1,0 +1,284 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. T-01 — Scaffold struttura directory e package": [
+      {
+        "executionId": "d977a6ea-bb9a-4c8b-9e0c-70220f0db723",
+        "chatSessionId": "sess_56e47d15-8fdb-47b9-9569-afb0201be93c",
+        "timestamp": 1790340779845
+      },
+      {
+        "executionId": "d977a6ea-bb9a-4c8b-9e0c-70220f0db723",
+        "chatSessionId": "sess_56e47d15-8fdb-47b9-9569-afb0201be93c",
+        "timestamp": 1790340947087
+      }
+    ],
+    "2. T-02 — Configurazione (`config.py`)": [
+      {
+        "executionId": "0fb1a041-79c7-48b0-b067-02e732b0283b",
+        "chatSessionId": "sess_42f3784b-edd3-4811-b135-1d280e0d3105",
+        "timestamp": 1790340969133
+      },
+      {
+        "executionId": "0fb1a041-79c7-48b0-b067-02e732b0283b",
+        "chatSessionId": "sess_42f3784b-edd3-4811-b135-1d280e0d3105",
+        "timestamp": 1790341100870
+      }
+    ],
+    "3. T-04 — Moduli di supporto (`errors.py`, `pagination.py`, `models.py`)": [
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341117254
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341129647
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341292029
+      }
+    ],
+    "4. T-05 — Repository: interfaccia astratta e backend memory": [
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341117505
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341296040
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341441820
+      }
+    ],
+    "5. T-06 — Backend JSON": [
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341117723
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341445412
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341576411
+      }
+    ],
+    "6. T-07 — Backend SQLite": [
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341117992
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341580047
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341770543
+      }
+    ],
+    "7. T-03 — Health endpoint e application factory": [
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341118201
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341774787
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341919268
+      }
+    ],
+    "8. T-08 — UserService: create e regole B01/B02": [
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341118423
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341923625
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790342046810
+      }
+    ],
+    "9. T-09 — UserService: get, list e filtri B03": [
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341118675
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790342050590
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790342225338
+      }
+    ],
+    "10. T-10 — UserService: replace (PUT) e update (PATCH)": [
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341118917
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790342229160
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790342395879
+      }
+    ],
+    "11. T-11 — UserService: delete": [
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341119138
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790342399757
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790342492146
+      }
+    ],
+    "12. T-12 — Routes HTTP complete": [
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341119334
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790342495941
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790342711024
+      }
+    ],
+    "13. T-13 — Test unitari completi (`tests/unit/`)": [
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341119545
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790342715548
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790342942112
+      }
+    ],
+    "14. T-14 — `services.yaml` e preparazione ambiente": [
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341119771
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790342946729
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790343150392
+      }
+    ],
+    "15. T-15 — Test di integrazione propri (`tests/integration/`)": [
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341120023
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790343154474
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790343261214
+      }
+    ],
+    "16. T-16 — Collaudo con suite del docente (solo user) e verifica checksum": [
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341120308
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790343267325
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790343448975
+      }
+    ],
+    "17. T-17 — `README.md` del servizio": [
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790341120574
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790343452965
+      },
+      {
+        "executionId": "44d276ee-96af-448d-a9d6-6d96c07535a1",
+        "chatSessionId": "sess_fcfd7ab8-1b97-4034-90c9-e0224fe22ba6",
+        "timestamp": 1790343582163
+      }
+    ]
+  }
+}
