@@ -616,3 +616,46 @@ def test_update_user_maps_repository_race_to_conflict(monkeypatch):
     monkeypatch.setattr(repo, "update", _raise)
     with pytest.raises(EmailConflictError):
         svc.update_user(created["id"], {"email": "taken@example.com"})
+
+
+# --------------------------------------------------------------------------- #
+# delete_user (REQ-USR-F09)
+# --------------------------------------------------------------------------- #
+def test_delete_user_removes_existing_record_and_returns_none():
+    """REQ-USR-F09-AC1: delete_user removes the user and returns None."""
+    repo = MemoryUserRepository()
+    svc = UserService(repo)
+    created = svc.create_user(
+        {"first_name": "Del", "last_name": "Ete", "email": "del@example.com"}
+    )
+    assert svc.delete_user(created["id"]) is None
+    assert repo.get(created["id"]) is None
+
+
+def test_delete_user_missing_id_raises_not_found():
+    """REQ-USR-F09-AC2: delete_user on an unknown id raises UserNotFoundError (404)."""
+    svc = _service()
+    with pytest.raises(UserNotFoundError):
+        svc.delete_user(str(uuid.uuid4()))
+
+
+def test_delete_user_then_get_user_raises_not_found():
+    """REQ-USR-F09-AC3: after a successful delete, get_user on the same id is 404."""
+    svc = _service()
+    created = svc.create_user(
+        {"first_name": "Gone", "last_name": "Soon", "email": "gone@example.com"}
+    )
+    svc.delete_user(created["id"])
+    with pytest.raises(UserNotFoundError):
+        svc.get_user(created["id"])
+
+
+def test_delete_user_second_delete_raises_not_found():
+    """REQ-USR-F09-AC4: a second delete on the same id raises UserNotFoundError."""
+    svc = _service()
+    created = svc.create_user(
+        {"first_name": "Twice", "last_name": "Del", "email": "twice@example.com"}
+    )
+    svc.delete_user(created["id"])
+    with pytest.raises(UserNotFoundError):
+        svc.delete_user(created["id"])

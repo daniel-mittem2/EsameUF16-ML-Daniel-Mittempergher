@@ -289,6 +289,33 @@ class UserService:
 
         return self._apply_update(user_id, changes)
 
+    def delete_user(self, user_id: str) -> None:
+        """Delete the user with ``user_id`` (REQ-USR-F09).
+
+        The delete is delegated to the repository, which reports whether a
+        record was actually removed. A missing user is a 404
+        (REQ-USR-F09-AC2). Because the repository returns ``False`` rather than
+        removing anything when the id is absent, a second delete of the same id
+        also raises :class:`UserNotFoundError` — the operation is not silently
+        idempotent at 204 (REQ-USR-F09-AC4). After a successful delete a later
+        :meth:`get_user` on the same id likewise raises ``UserNotFoundError``
+        (REQ-USR-F09-AC3).
+
+        Args:
+            user_id: The UUID of the user to delete. Treated as an opaque key;
+                an absent id (including a syntactically invalid one) is a 404.
+
+        Returns:
+            ``None``. The routes layer maps a successful delete to HTTP 204 with
+            no body (REQ-USR-F09-AC1).
+
+        Raises:
+            UserNotFoundError: If no user with ``user_id`` exists
+                (REQ-USR-F09-AC2). The routes layer maps this to 404.
+        """
+        if not self._repo.delete(user_id):
+            raise UserNotFoundError(f"No user with id {user_id!r}")
+
     def _apply_update(self, user_id: str, changes: dict) -> dict:
         """Delegate the atomic write to the repository, mapping its exceptions.
 
