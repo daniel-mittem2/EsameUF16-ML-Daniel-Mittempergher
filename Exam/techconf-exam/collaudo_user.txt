@@ -1,0 +1,29 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\mittd\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\mittd\OneDrive\Desktop\Esame\EsameUF16-ML-Daniel-Mittempergher\Exam\techconf-exam\tests\integration
+configfile: pytest.ini
+plugins: cov-7.1.0
+collecting ... collected 37 items / 24 deselected / 13 selected
+
+tests\integration\test_event.py::test_it_e08_user_service_unreachable SKIPPED [  7%]
+tests\integration\test_feedback.py::test_it_f01_registered_user_can_feedback SKIPPED [ 15%]
+tests\integration\test_notification.py::test_it_n01_create_for_existing_user SKIPPED [ 23%]
+tests\integration\test_notification.py::test_it_n02_user_not_found SKIPPED [ 30%]
+tests\integration\test_registration.py::test_it_r02_user_not_found SKIPPED [ 38%]
+tests\integration\test_user.py::test_it_u01_create_valid PASSED          [ 46%]
+tests\integration\test_user.py::test_it_u02_missing_required PASSED      [ 53%]
+tests\integration\test_user.py::test_it_u03_duplicate_email_case_insensitive PASSED [ 61%]
+tests\integration\test_user.py::test_it_u04_get_by_id_and_404 PASSED     [ 69%]
+tests\integration\test_user.py::test_it_u05_list_pagination_and_role_filter PASSED [ 76%]
+tests\integration\test_user.py::test_it_u06_put_and_patch_update_timestamp PASSED [ 84%]
+tests\integration\test_user.py::test_it_u07_delete_then_404 PASSED       [ 92%]
+tests\integration\test_user.py::test_it_u08_malformed_json_and_health PASSED [100%]
+
+=========================== short test summary info ===========================
+SKIPPED [1] tests\integration\conftest.py:146: Service 'event' not declared in services.yaml (skipped).
+SKIPPED [1] tests\integration\test_feedback.py:26: Service 'event' not declared in services.yaml (skipped).
+SKIPPED [1] tests\integration\test_notification.py:21: Service 'notification' not declared in services.yaml (skipped).
+SKIPPED [1] tests\integration\test_notification.py:34: Service 'notification' not declared in services.yaml (skipped).
+SKIPPED [1] tests\integration\test_registration.py:41: Service 'event' not declared in services.yaml (skipped).
+================= 8 passed, 5 skipped, 24 deselected in 2.83s =================
