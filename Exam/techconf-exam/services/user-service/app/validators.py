@@ -20,7 +20,10 @@ _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 # Fields allowed by UserCreate / UserUpdate (contract schemas).
 _ALLOWED_FIELDS = {"first_name", "last_name", "email", "company", "role"}
 _REQUIRED_CREATE_FIELDS = ("first_name", "last_name", "email")
-_VALID_ROLES = {"attendee", "speaker", "organizer"}
+# Public: the role enum from the contract, shared with the service layer's
+# list filter validation (REQ-USR-B03-AC5).
+VALID_ROLES = {"attendee", "speaker", "organizer"}
+_VALID_ROLES = VALID_ROLES  # backward-compatible alias for internal callers
 
 _MAX_NAME_LEN = 50
 _MAX_COMPANY_LEN = 100
