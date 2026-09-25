@@ -91,8 +91,8 @@ def get_repository(backend: str, data_dir: Path) -> AbstractUserRepository:
     """Return a concrete repository for the requested ``backend`` (REQ-USR-F14).
 
     Backend classes are imported locally so importing this module never pulls in
-    a backend that is not needed. In T-05 only the ``memory`` branch is
-    implemented; the ``json`` and ``sqlite`` branches are added in T-06/T-07.
+    a backend that is not needed. The ``json`` branch is added in T-06; the
+    ``sqlite`` branch is added in T-07.
 
     Args:
         backend: One of ``"memory"``, ``"json"`` or ``"sqlite"``.
@@ -105,5 +105,11 @@ def get_repository(backend: str, data_dir: Path) -> AbstractUserRepository:
         from app.backends.memory import MemoryUserRepository
 
         return MemoryUserRepository()
+
+    if backend == "json":
+        from app.backends.json_backend import JsonUserRepository
+
+        data_dir.mkdir(parents=True, exist_ok=True)
+        return JsonUserRepository(data_dir / "users.json")
 
     raise ValueError(f"Unknown STORAGE_BACKEND: {backend!r}")

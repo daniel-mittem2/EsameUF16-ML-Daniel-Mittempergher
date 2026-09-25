@@ -11,6 +11,7 @@ import pytest
 
 from app.models import new_user_record, utcnow_iso
 from app.backends.memory import MemoryUserRepository
+from app.backends.json_backend import JsonUserRepository
 from app.repository import (
     AbstractUserRepository,
     EmailAlreadyExistsError,
@@ -176,3 +177,103 @@ def test_concurrent_create_same_email_exactly_one_success():
     stored = repo.list_all({})
     assert len(stored) == 1
     assert stored[0]["id"] == successes[0]["id"]
+
+
+# --------------------------------------------------------------------------- #
+# JSON backend — REQ-USR-F14 (json branch) + REQ-USR-B01
+# --------------------------------------------------------------------------- #
+def test_get_repository_json_returns_json_backend(tmp_path):
+    """REQ-USR-F14-AC2: the json branch returns a JsonUserRepository."""
+    repo = get_repository("json", data_dir=tmp_path)
+    assert isinstance(repo, JsonUserRepository)
+    assert isinstance(repo, AbstractUserRepository)
+    assert (tmp_path / "users.json").parent.exists()
+
+
+def test_json_create_and_get_roundtrip(tmp_path):
+    repo = JsonUserRepository(tmp_path / "users.json")
+    rec = _record("alice@example.com")
+    created = repo.create(rec)
+    assert created["id"] == rec["id"]
+    assert repo.get(rec["id"])["email"] == "alice@example.com"
+
+
+def test_json_missing_file_starts_empty(tmp_path):
+    """A JsonUserRepository over a non-existent file behaves as an empty store."""
+    repo = JsonUserRepository(tmp_path / "does-not-exist.json")
+    assert repo.list_all({}) == []
+    assert repo.get("anything") is None
+
+
+def test_json_get_by_email_is_case_insensitive(tmp_path):
+    """REQ-USR-B01: email lookup ignores capitalisation."""
+    repo = JsonUserRepository(tmp_path / "users.json")
+    rec = _record("alice@example.com")
+    repo.create(rec)
+    assert repo.get_by_email("ALICE@EXAMPLE.COM")["id"] == rec["id"]
+    assert repo.get_by_email("nobody@example.com") is None
+
+
+def test_json_create_duplicate_email_case_insensitive_raises(tmp_path):
+    """REQ-USR-B01: differing case is still a duplicate."""
+    repo = JsonUserRepository(tmp_path / "users.json")
+    repo.create(_record("alice@example.com"))
+    dup = new_user_record(
+        {"first_name": "C", "last_name": "D", "email": "ALICE@example.com"},
+        utcnow_iso(),
+    )
+    with pytest.raises(EmailAlreadyExistsError):
+        repo.create(dup)
+
+
+def test_json_persists_across_reopen(tmp_path):
+    """REQ-USR-F14-AC2: data written by one instance is visible to a fresh
+    instance opened on the same file (reopening restores persisted state)."""
+    path = tmp_path / "users.json"
+    repo = JsonUserRepository(path)
+    rec = _record("alice@example.com", role="organizer")
+    repo.create(rec)
+
+    # Brand new instance over the same file — must load the existing record.
+    reopened = JsonUserRepository(path)
+    loaded = reopened.get(rec["id"])
+    assert loaded is not None
+    assert loaded["id"] == rec["id"]
+    assert loaded["email"] == "alice@example.com"
+    assert loaded["role"] == "organizer"
+    assert reopened.get_by_email("alice@example.com")["id"] == rec["id"]
+    assert len(reopened.list_all({})) == 1
+
+
+def test_json_update_and_delete_persist_across_reopen(tmp_path):
+    """Updates and deletes are flushed to disk and survive a reopen."""
+    path = tmp_path / "users.json"
+    repo = JsonUserRepository(path)
+    rec = _record("alice@example.com")
+    repo.create(rec)
+    repo.update(rec["id"], {"first_name": "Alicia"})
+
+    assert JsonUserRepository(path).get(rec["id"])["first_name"] == "Alicia"
+
+    repo.delete(rec["id"])
+    assert JsonUserRepository(path).get(rec["id"]) is None
+
+
+def test_json_uses_atomic_replace_no_tmp_left_behind(tmp_path):
+    """The temporary write file is renamed away, never left behind."""
+    path = tmp_path / "users.json"
+    repo = JsonUserRepository(path)
+    repo.create(_record("alice@example.com"))
+    assert path.exists()
+    assert not (tmp_path / "users.json.tmp").exists()
+
+
+def test_json_get_returns_independent_copy(tmp_path):
+    """Mutating a returned record must not corrupt the in-memory/on-disk store."""
+    path = tmp_path / "users.json"
+    repo = JsonUserRepository(path)
+    rec = _record("alice@example.com")
+    repo.create(rec)
+    fetched = repo.get(rec["id"])
+    fetched["first_name"] = "MUTATED"
+    assert repo.get(rec["id"])["first_name"] != "MUTATED"
