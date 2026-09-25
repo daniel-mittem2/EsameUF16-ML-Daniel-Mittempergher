@@ -143,8 +143,9 @@ ma le richieste HTTP non escono mai dalla rete.
 - Default: `PORT` non ha default (errore esplicito se mancante).
   `STORAGE_BACKEND=memory`, `DATA_DIR=./data`. Gli URL dei servizi hanno default
   `http://localhost:<porta_dev>`.
-- Il comando di avvio è `python -m app` per tutti i servizi; `__main__.py` legge
-  `PORT` e passa a `app.run(host='0.0.0.0', port=int(port))`.
+- Il comando di avvio è `python -m app` per tutti i servizi. `__main__.py` **non legge
+  direttamente** `os.environ`: importa `app.config` e legge `config.PORT`. In questo
+  modo tutta la logica di lettura delle variabili d'ambiente rimane in un unico posto.
 - **Dipendenze Python**: un file `requirements.txt` per servizio (non un unico
   ambiente condiviso). La suite lancia ogni servizio nel suo `cwd`, quindi può
   usare ambienti separati. In sviluppo è accettabile un unico venv che installi
@@ -178,9 +179,27 @@ py -3.12 -m pytest tests/unit -v --cov=app --cov-report=term-missing
 **Comando per tutti i test unitari della piattaforma:**
 
 ```bash
-# dalla root del repo
-py -3.12 -m pytest Exam/techconf-exam/services/*/tests/unit -v
+# dalla root del repo — ogni servizio gira in un processo separato per evitare
+# collisioni tra i package `app/` omonimi e wildcard non portabili su Windows.
+for svc in user-service event-service registration-service; do
+    py -3.12 -m pytest Exam/techconf-exam/services/$svc/tests/unit -v \
+        --cov=app --rootdir=Exam/techconf-exam/services/$svc
+done
 ```
+
+Su **Windows PowerShell** equivalente:
+
+```powershell
+foreach ($svc in @("user-service","event-service","registration-service")) {
+    py -3.12 -m pytest "Exam/techconf-exam/services/$svc/tests/unit" -v `
+        --cov=app "--rootdir=Exam/techconf-exam/services/$svc"
+}
+```
+
+Oppure usare lo script di utilità `scripts/run_all_unit_tests.ps1` (creato al
+primo task di ogni servizio). Ogni servizio **deve** essere testato nel suo `cwd`
+(`--rootdir` o `cwd` del subprocess) in modo che l'import `from app import ...`
+risolva il package locale e non un altro servizio nel path.
 
 **Test di integrazione propri:**
 

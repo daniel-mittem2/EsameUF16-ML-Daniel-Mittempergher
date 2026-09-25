@@ -4,10 +4,10 @@
     {
       "name": "Run Unit Tests on Python Save",
       "trigger": "PostFileSave",
-      "matcher": "Exam/techconf-exam/services/[^/]+/.*\\.py$",
+      "matcher": "Exam[\\\\/]techconf-exam[\\\\/]services[\\\\/][^\\\\/]+[\\\\/].*\\.py$",
       "action": {
         "type": "command",
-        "command": "python -c \"\nimport sys, os, subprocess, json\n\ndata = json.load(sys.stdin)\nfile_path = data.get('file', '')\n\nimport re\nm = re.search(r'(.*Exam[/\\\\\\\\]techconf-exam[/\\\\\\\\]services[/\\\\\\\\][^/\\\\\\\\]+)', file_path)\nif not m:\n    sys.exit(0)\n\nsvc_dir = m.group(1)\ntests_dir = os.path.join(svc_dir, 'tests', 'unit')\nif not os.path.isdir(tests_dir):\n    print('[hook] No unit tests found at ' + tests_dir + ' - skipping', flush=True)\n    sys.exit(0)\n\nprint('[hook] Running unit tests for: ' + os.path.basename(svc_dir), flush=True)\nresult = subprocess.run(\n    ['py', '-3.12', '-m', 'pytest', tests_dir, '-v', '--tb=short', '-q'],\n    cwd=svc_dir\n)\nsys.exit(result.returncode)\n\""
+        "command": "py -3.12 .kiro/scripts/run_unit_tests.py"
       }
     }
   ]
