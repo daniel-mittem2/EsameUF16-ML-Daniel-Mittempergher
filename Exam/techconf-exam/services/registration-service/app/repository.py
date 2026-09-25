@@ -121,8 +121,8 @@ def get_repository(backend: str, data_dir: Path) -> AbstractRegistrationReposito
     """Return a concrete repository for the requested ``backend`` (REQ-REG-F13).
 
     Backend classes are imported locally so importing this module never pulls in
-    a backend that is not needed. In T-05 only the ``memory`` branch is
-    implemented; the ``json`` and ``sqlite`` branches are added in T-06/T-07.
+    a backend that is not needed. The ``memory`` and ``json`` branches are
+    implemented (T-05/T-06); the ``sqlite`` branch is added in T-07.
 
     Args:
         backend: One of ``"memory"``, ``"json"`` or ``"sqlite"``.
@@ -135,5 +135,10 @@ def get_repository(backend: str, data_dir: Path) -> AbstractRegistrationReposito
         from app.backends.memory import MemoryRegistrationRepository
 
         return MemoryRegistrationRepository()
+
+    if backend == "json":
+        from app.backends.json_backend import JsonRegistrationRepository
+
+        return JsonRegistrationRepository(Path(data_dir) / "registrations.json")
 
     raise ValueError(f"Unknown STORAGE_BACKEND: {backend!r}")

@@ -278,3 +278,161 @@ def test_concurrent_create_capacity_one_admits_exactly_one():
     assert len(successes) == 1
     assert len(fulls) == 29
     assert repo.count_confirmed(EVENT_X) == 1
+
+
+# --------------------------------------------------------------------------- #
+# JsonRegistrationRepository — REQ-REG-F13-AC2 (persistence)
+# --------------------------------------------------------------------------- #
+from app.backends.json_backend import JsonRegistrationRepository  # noqa: E402
+
+
+def _json_repo(tmp_path):
+    """Return a JsonRegistrationRepository backed by a file under ``tmp_path``."""
+    return JsonRegistrationRepository(tmp_path / "registrations.json")
+
+
+def test_get_repository_json_returns_json_backend(tmp_path):
+    """REQ-REG-F13-AC2: the json branch returns a JsonRegistrationRepository."""
+    repo = get_repository("json", data_dir=tmp_path)
+    assert isinstance(repo, JsonRegistrationRepository)
+    assert isinstance(repo, AbstractRegistrationRepository)
+
+
+def test_json_create_if_allowed_creates_and_is_retrievable(tmp_path):
+    """REQ-REG-B05-AC1: within capacity, the record is created and retrievable."""
+    repo = _json_repo(tmp_path)
+    record = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+    assert record["status"] == "confirmed"
+    assert repo.get(record["id"]) == record
+
+
+def test_json_create_if_allowed_duplicate_confirmed_raises(tmp_path):
+    """REQ-REG-B04-AC1: a second confirmed registration for the pair raises."""
+    repo = _json_repo(tmp_path)
+    repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+    with pytest.raises(AlreadyRegisteredError):
+        repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+    assert len(repo.list_all({})) == 1
+
+
+def test_json_create_if_allowed_event_full_raises(tmp_path):
+    """REQ-REG-B05-AC2: at capacity, a further registration raises EventFullError."""
+    repo = _json_repo(tmp_path)
+    repo.create_if_allowed(USER_A, EVENT_X, capacity=1, make_record=_maker(USER_A, EVENT_X))
+    with pytest.raises(EventFullError):
+        repo.create_if_allowed(USER_B, EVENT_X, capacity=1, make_record=_maker(USER_B, EVENT_X))
+    assert repo.count_confirmed(EVENT_X) == 1
+
+
+def test_json_set_status_updates_and_persists(tmp_path):
+    """REQ-REG-B07/F10: set_status writes the new status and refreshes updated_at."""
+    repo = _json_repo(tmp_path)
+    record = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+    later = "2099-01-01T00:00:00.000000Z"
+    updated = repo.set_status(record["id"], "cancelled", later)
+    assert updated["status"] == "cancelled"
+    assert updated["updated_at"] == later
+
+
+def test_json_set_status_missing_returns_none(tmp_path):
+    """REQ-REG-B07: setting the status of an unknown id returns None."""
+    repo = _json_repo(tmp_path)
+    assert repo.set_status("does-not-exist", "cancelled", utcnow_iso()) is None
+
+
+def test_json_list_all_combines_filters_with_and_logic(tmp_path):
+    """REQ-REG-F05-AC4: user_id, event_id and status filters combine with AND."""
+    repo = _json_repo(tmp_path)
+    first = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+    repo.create_if_allowed(USER_A, EVENT_Y, capacity=10, make_record=_maker(USER_A, EVENT_Y))
+    repo.create_if_allowed(USER_B, EVENT_X, capacity=10, make_record=_maker(USER_B, EVENT_X))
+    result = repo.list_all({"user_id": USER_A, "event_id": EVENT_X, "status": "confirmed"})
+    assert len(result) == 1
+    assert result[0]["id"] == first["id"]
+
+
+def test_json_delete_removes_record_and_persists(tmp_path):
+    """REQ-REG-F07: deleting an existing registration returns True and removes it."""
+    repo = _json_repo(tmp_path)
+    record = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+    assert repo.delete(record["id"]) is True
+    assert repo.get(record["id"]) is None
+
+
+def test_json_delete_missing_reports_false(tmp_path):
+    """REQ-REG-F07: deleting an unknown id returns False."""
+    repo = _json_repo(tmp_path)
+    assert repo.delete("does-not-exist") is False
+
+
+def test_json_count_confirmed_counts_only_confirmed(tmp_path):
+    """REQ-REG-B08: count_confirmed counts only confirmed records for the event."""
+    repo = _json_repo(tmp_path)
+    a = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+    repo.create_if_allowed(USER_B, EVENT_X, capacity=10, make_record=_maker(USER_B, EVENT_X))
+    repo.create_if_allowed(USER_A, EVENT_Y, capacity=10, make_record=_maker(USER_A, EVENT_Y))
+    repo.set_status(a["id"], "cancelled", utcnow_iso())
+    assert repo.count_confirmed(EVENT_X) == 1
+    assert repo.count_confirmed(EVENT_Y) == 1
+
+
+def test_json_data_persists_across_reopen(tmp_path):
+    """REQ-REG-F13-AC2: data written by one instance survives reopening the file."""
+    path = tmp_path / "registrations.json"
+    repo = JsonRegistrationRepository(path)
+    created = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+    repo.set_status(created["id"], "cancelled", "2099-01-01T00:00:00.000000Z")
+
+    # Reopen a fresh instance against the same file — state must be restored.
+    reopened = JsonRegistrationRepository(path)
+    restored = reopened.get(created["id"])
+    assert restored is not None
+    assert restored["id"] == created["id"]
+    assert restored["status"] == "cancelled"
+    assert restored["updated_at"] == "2099-01-01T00:00:00.000000Z"
+    assert len(reopened.list_all({})) == 1
+
+
+def test_json_no_residual_tmp_file_after_writes(tmp_path):
+    """REQ-REG-F13-AC2 / design §6: atomic write leaves no residual .tmp file."""
+    path = tmp_path / "registrations.json"
+    repo = JsonRegistrationRepository(path)
+    record = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+    repo.set_status(record["id"], "cancelled", utcnow_iso())
+    repo.delete(record["id"])
+
+    tmp_path_file = path.with_name(path.name + ".tmp")
+    assert not tmp_path_file.exists()
+    # Only the canonical registrations.json is present in the data dir.
+    leftover_tmp = list(tmp_path.glob("*.tmp"))
+    assert leftover_tmp == []
+
+
+def test_json_concurrent_create_capacity_one_admits_exactly_one(tmp_path):
+    """REQ-REG-B05-AC5 / design §5: capacity 1, many concurrent creates → one wins."""
+    repo = _json_repo(tmp_path)
+    users = [f"{i:08d}-0000-4000-8000-000000000000" for i in range(20)]
+    successes: list[dict] = []
+    fulls: list[Exception] = []
+    guard = threading.Lock()
+
+    def worker(user_id: str) -> None:
+        try:
+            record = repo.create_if_allowed(
+                user_id, EVENT_X, capacity=1, make_record=_maker(user_id, EVENT_X)
+            )
+            with guard:
+                successes.append(record)
+        except EventFullError as exc:
+            with guard:
+                fulls.append(exc)
+
+    threads = [threading.Thread(target=worker, args=(u,)) for u in users]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert len(successes) == 1
+    assert len(fulls) == 19
+    assert repo.count_confirmed(EVENT_X) == 1
