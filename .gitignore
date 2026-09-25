@@ -1,0 +1,13 @@
+# Python cache — exclude from anywhere in the repo including .kiro/scripts/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# pytest cache
+.pytest_cache/
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
