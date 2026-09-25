@@ -289,3 +289,38 @@ vanno modificati.
 | T-18 | Gestione bug reali (`BUGS.md`) |
 | T-19 | `README.md` del servizio e verifica checklist di consegna (questo documento) |
 | T-20 | Verifica finale e tag `v1.0.0` |
+
+---
+
+## Verifica della checklist di consegna §9 (T-19)
+
+Verifica eseguita con **evidenze reali** (nessuna voce spuntata senza prova). I comandi
+sono riproducibili sull'ambiente descritto sopra (`py -3.12`, PowerShell su Windows).
+Ultima esecuzione della verifica: suite unit dei tre servizi, integrazione propria di
+event e registration, checksum dei file protetti e validazione dell'hook.
+
+| # | Voce §9 | Stato | Evidenza reale |
+|---|---------|-------|----------------|
+| 1 | Steering (4 file) e ≥1 hook funzionante | ✅ Fatto | `.kiro/steering/` contiene esattamente 4 file: `platform-standards.md`, `product.md`, `structure.md`, `tech.md`. Hook `.kiro/hooks/unit-tests-on-save.json` (`PostFileSave`) con matcher `services/<*-service>/**/*.py`; `py -3.12 .kiro/scripts/validate_hook.py` conferma schema, matcher (match su path registration/user/event, no-match su `contracts/`, `tests/integration/`) e **dry-run reale** dello script `run_unit_tests.py` che lancia pytest sul servizio interessato. |
+| 2 | Specs dei 3 servizi obbligatori (requirements/design/tasks) | ✅ Fatto | `.kiro/specs/user-service/`, `.kiro/specs/event-service/`, `.kiro/specs/registration-service/` contengono ciascuna `requirements.md`, `design.md`, `tasks.md`. I task sono spuntati solo dove realmente eseguiti (T-20 resta aperto). |
+| 3 | `services.yaml` con i 3 servizi; backend memory/json/sqlite | ✅ Fatto | `Exam/techconf-exam/services.yaml` dichiara `user`, `event`, `registration`. I tre backend di registration sono esercitati dai test parametrizzati: `py -3.12 -m pytest tests/unit/test_repository.py -k "memory or json or sqlite"` → 34 passed. |
+| 4 | Coverage ≥ 80% per servizio | ✅ Fatto | Esecuzioni reali `--cov-fail-under=80`: user-service **168 passed, 95.33%**; event-service **222 passed, 97.16%**; registration-service **208 passed, 97.19%**. |
+| 5 | Integration test propri per event e registration | ✅ Fatto | `services/event-service`: `pytest tests/integration` → **3 passed**. `services/registration-service`: `pytest tests/integration` → **4 passed** (201/confirmed con `amount==price`, `422 REFERENCE_NOT_FOUND` per user ed event sconosciuti, `503 DEPENDENCY_UNAVAILABLE` con dipendenze spente). |
+| 6 | `collaudo.txt` dal run `-m mandatory` (T-16) | ✅ Fatto | `Exam/techconf-exam/collaudo.txt` presente con output reale: **27 passed, 10 deselected** (IT-U01..U08, IT-E01..E08, IT-R01..R10, IT-J01). |
+| 7 | `BUGS.md` con ≥2 bug reali chiusi (T-18) | ⚠️ Parziale — richiede azione utente | `Exam/techconf-exam/BUGS.md` documenta **2 bug reali di implementazione** (BUG-001 memory backend senza isolamento; BUG-002 `validate_date` accetta date settimana ISO) con test di regressione già scritti e verdi e fix applicati sul working tree. **Non ancora chiusi formalmente**: `gh` CLI non disponibile (OPEN-REG-02), quindi le issue GitHub reali e i commit `(closes #N)` devono essere creati manualmente dall'utente. I numeri issue sono segnaposto `<ISSUE #TBD by user>`. |
+| 8 | README presenti; file protetti non modificati (T-17) | ✅ Fatto | Questo README è presente e completo. Verifica SHA-256 di `CHECKSUMS.sha256`: **17/17 OK, 0 mismatch** — `contracts/`, `tests/integration/` e `CHECKSUMS.sha256` intatti. |
+
+### Voci in sospeso (azione dell'utente richiesta)
+
+- **Chiusura formale dei bug (§9.7):** aprire dal browser le 2 issue GitHub reali (una
+  per BUG-001, una per BUG-002), sostituire i segnaposto `<ISSUE #TBD by user>` in
+  `BUGS.md` con i numeri reali e creare i commit di fix con i messaggi indicati
+  (`... (closes #N)`), quindi merge su `main`. I fix e i test di regressione sono già
+  presenti nel working tree; manca solo la tracciatura formale su GitHub.
+- **Tag `v1.0.0` (T-20):** da creare solo dopo il completamento reale di tutte le voci,
+  incluse le issue chiuse (fuori dallo scope di T-19).
+
+> Nota sull'hook: la validazione automatica (schema, matcher, esecuzione dello script)
+> è confermata da terminale. La visualizzazione dello stato "abilitato" nel pannello
+> *Agent Hooks* della IDE e l'attivazione al salvataggio interattivo di un `.py`
+> restano una verifica manuale nella UI di Kiro.
