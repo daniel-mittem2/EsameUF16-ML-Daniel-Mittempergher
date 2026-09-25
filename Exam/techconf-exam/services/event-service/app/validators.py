@@ -69,17 +69,25 @@ def validate_date(value) -> bool:
     """Return True if ``value`` is a valid ``YYYY-MM-DD`` date string.
 
     Rejects non-strings, wrong formats, and impossible calendar dates
-    (e.g. ``2026-02-30``) (REQ-EVT-F03-AC5).
+    (e.g. ``2026-02-30``) (REQ-EVT-F03-AC5). The contract declares the field as
+    OpenAPI ``format: date`` (RFC 3339 full-date), which is strictly
+    ``YYYY-MM-DD``.
+
+    ``date.fromisoformat`` in Python 3.11+ also parses ISO week dates
+    (``YYYY-Www-D``, e.g. ``2026-W40-1``) and ordinal dates, some of which are
+    exactly 10 characters long, so a bare ``len(value) == 10`` guard is not
+    sufficient. We therefore require that the parsed date, re-formatted as
+    ``YYYY-MM-DD``, is byte-for-byte identical to the input.
     """
     if not _is_str(value):
         return False
     try:
-        date.fromisoformat(value)
+        parsed = date.fromisoformat(value)
     except ValueError:
         return False
-    # ``date.fromisoformat`` accepts exactly ``YYYY-MM-DD`` for date objects;
-    # guard the length to reject any surprising accepted extended forms.
-    return len(value) == 10
+    # Reject any accepted-but-non-calendar form (ISO week/ordinal dates): only a
+    # canonical ``YYYY-MM-DD`` string round-trips to itself.
+    return parsed.isoformat() == value
 
 
 def validate_dates_coherent(start, end) -> bool:

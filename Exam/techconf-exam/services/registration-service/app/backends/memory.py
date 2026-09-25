@@ -19,6 +19,7 @@ The lock is re-entrant so helpers that re-acquire it do not deadlock.
 """
 from __future__ import annotations
 
+import copy
 import threading
 from typing import Callable, Optional
 
@@ -66,11 +67,14 @@ class MemoryRegistrationRepository(AbstractRegistrationRepository):
                 )
             record = make_record()
             self._data[record["id"]] = record
-            return record
+            # Return an isolated copy so callers cannot mutate the stored record
+            # (mirrors the json/sqlite backends; REQ-REG-F13-AC4, REQ-REG-F10).
+            return copy.deepcopy(record)
 
     def get(self, reg_id: str) -> Optional[dict]:
         with self._lock:
-            return self._data.get(reg_id)
+            record = self._data.get(reg_id)
+            return copy.deepcopy(record) if record is not None else None
 
     def list_all(self, filters: dict) -> list[dict]:
         """Return records matching ``user_id``/``event_id``/``status`` (AND logic)."""
@@ -86,7 +90,7 @@ class MemoryRegistrationRepository(AbstractRegistrationRepository):
                     continue
                 if status is not None and record["status"] != status:
                     continue
-                results.append(record)
+                results.append(copy.deepcopy(record))
             return results
 
     def set_status(self, reg_id: str, new_status: str, now: str) -> Optional[dict]:
@@ -97,7 +101,7 @@ class MemoryRegistrationRepository(AbstractRegistrationRepository):
                 return None
             record["status"] = new_status
             record["updated_at"] = now
-            return record
+            return copy.deepcopy(record)
 
     def delete(self, reg_id: str) -> bool:
         with self._lock:
