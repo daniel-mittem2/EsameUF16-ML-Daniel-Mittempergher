@@ -436,3 +436,323 @@ def test_json_concurrent_create_capacity_one_admits_exactly_one(tmp_path):
     assert len(successes) == 1
     assert len(fulls) == 19
     assert repo.count_confirmed(EVENT_X) == 1
+
+
+# --------------------------------------------------------------------------- #
+# SqliteRegistrationRepository — REQ-REG-F13-AC3 (persistence) / REQ-REG-B04
+# --------------------------------------------------------------------------- #
+import sqlite3  # noqa: E402
+
+from app.backends.sqlite_backend import SqliteRegistrationRepository  # noqa: E402
+
+
+def _sqlite_repo(tmp_path):
+    """Return a SqliteRegistrationRepository backed by a DB under ``tmp_path``."""
+    return SqliteRegistrationRepository(tmp_path / "registrations.db")
+
+
+def test_get_repository_sqlite_returns_sqlite_backend(tmp_path):
+    """REQ-REG-F13-AC3: the sqlite branch returns a SqliteRegistrationRepository."""
+    repo = get_repository("sqlite", data_dir=tmp_path)
+    try:
+        assert isinstance(repo, SqliteRegistrationRepository)
+        assert isinstance(repo, AbstractRegistrationRepository)
+    finally:
+        repo.close()
+
+
+def test_get_repository_sqlite_uses_registrations_db_filename(tmp_path):
+    """REQ-REG-F13-AC3/AC5: the sqlite file is registrations.db under DATA_DIR."""
+    repo = get_repository("sqlite", data_dir=tmp_path)
+    try:
+        repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+        assert (tmp_path / "registrations.db").exists()
+    finally:
+        repo.close()
+
+
+def test_sqlite_create_if_allowed_creates_and_is_retrievable(tmp_path):
+    """REQ-REG-B05-AC1: within capacity, the record is created and retrievable."""
+    repo = _sqlite_repo(tmp_path)
+    try:
+        record = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+        assert record["status"] == "confirmed"
+        assert record["amount"] == 149.0
+        assert repo.get(record["id"]) == record
+    finally:
+        repo.close()
+
+
+def test_sqlite_create_if_allowed_duplicate_confirmed_raises(tmp_path):
+    """REQ-REG-B04-AC1: a second confirmed registration for the pair raises."""
+    repo = _sqlite_repo(tmp_path)
+    try:
+        repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+        with pytest.raises(AlreadyRegisteredError):
+            repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+        assert len(repo.list_all({})) == 1
+    finally:
+        repo.close()
+
+
+def test_sqlite_cancelled_does_not_block_new_registration(tmp_path):
+    """REQ-REG-B04-AC2: a cancelled registration for the pair does not block a new one."""
+    repo = _sqlite_repo(tmp_path)
+    try:
+        first = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+        repo.set_status(first["id"], "cancelled", utcnow_iso())
+        second = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+        assert second["status"] == "confirmed"
+        assert second["id"] != first["id"]
+    finally:
+        repo.close()
+
+
+def test_sqlite_partial_unique_index_prevents_duplicate_confirmed(tmp_path):
+    """REQ-REG-B04 / design §6: the partial unique index rejects a duplicate confirmed row.
+
+    This bypasses ``create_if_allowed`` and inserts a second confirmed row for
+    the same ``(user_id, event_id)`` directly, proving the DB-level safety net
+    raises :class:`sqlite3.IntegrityError` independently of the in-process lock.
+    """
+    repo = _sqlite_repo(tmp_path)
+    try:
+        first = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+        # Direct insert of a second confirmed row for the same pair must fail.
+        with pytest.raises(sqlite3.IntegrityError):
+            with repo._conn:
+                repo._conn.execute(
+                    "INSERT INTO registrations "
+                    "(id, user_id, event_id, amount, status, created_at, updated_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    ("forced-duplicate-id", USER_A, EVENT_X, 149.0, "confirmed",
+                     first["created_at"], first["updated_at"]),
+                )
+        # A cancelled row for the same pair is allowed by the partial index.
+        with repo._conn:
+            repo._conn.execute(
+                "INSERT INTO registrations "
+                "(id, user_id, event_id, amount, status, created_at, updated_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ("cancelled-id", USER_A, EVENT_X, 149.0, "cancelled",
+                 first["created_at"], first["updated_at"]),
+            )
+        assert repo.get("cancelled-id") is not None
+    finally:
+        repo.close()
+
+
+def test_sqlite_create_if_allowed_event_full_raises(tmp_path):
+    """REQ-REG-B05-AC2: at capacity, a further registration raises EventFullError."""
+    repo = _sqlite_repo(tmp_path)
+    try:
+        repo.create_if_allowed(USER_A, EVENT_X, capacity=1, make_record=_maker(USER_A, EVENT_X))
+        with pytest.raises(EventFullError):
+            repo.create_if_allowed(USER_B, EVENT_X, capacity=1, make_record=_maker(USER_B, EVENT_X))
+        assert repo.count_confirmed(EVENT_X) == 1
+    finally:
+        repo.close()
+
+
+def test_sqlite_cancelled_frees_a_seat(tmp_path):
+    """REQ-REG-B05-AC3/B07-AC4: cancelling a confirmed registration frees a seat."""
+    repo = _sqlite_repo(tmp_path)
+    try:
+        first = repo.create_if_allowed(USER_A, EVENT_X, capacity=1, make_record=_maker(USER_A, EVENT_X))
+        repo.set_status(first["id"], "cancelled", utcnow_iso())
+        second = repo.create_if_allowed(USER_B, EVENT_X, capacity=1, make_record=_maker(USER_B, EVENT_X))
+        assert second["status"] == "confirmed"
+        assert repo.count_confirmed(EVENT_X) == 1
+    finally:
+        repo.close()
+
+
+def test_sqlite_get_missing_returns_none(tmp_path):
+    """REQ-REG-F13: fetching an unknown id returns None."""
+    repo = _sqlite_repo(tmp_path)
+    try:
+        assert repo.get("does-not-exist") is None
+    finally:
+        repo.close()
+
+
+def test_sqlite_list_all_combines_filters_with_and_logic(tmp_path):
+    """REQ-REG-F05-AC4: user_id, event_id and status filters combine with AND."""
+    repo = _sqlite_repo(tmp_path)
+    try:
+        first = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+        repo.create_if_allowed(USER_A, EVENT_Y, capacity=10, make_record=_maker(USER_A, EVENT_Y))
+        repo.create_if_allowed(USER_B, EVENT_X, capacity=10, make_record=_maker(USER_B, EVENT_X))
+        result = repo.list_all({"user_id": USER_A, "event_id": EVENT_X, "status": "confirmed"})
+        assert len(result) == 1
+        assert result[0]["id"] == first["id"]
+    finally:
+        repo.close()
+
+
+def test_sqlite_list_all_without_filters_returns_everything(tmp_path):
+    """REQ-REG-F05: an empty filter set returns every stored record."""
+    repo = _sqlite_repo(tmp_path)
+    try:
+        repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+        repo.create_if_allowed(USER_B, EVENT_Y, capacity=10, make_record=_maker(USER_B, EVENT_Y))
+        assert len(repo.list_all({})) == 2
+    finally:
+        repo.close()
+
+
+def test_sqlite_set_status_updates_and_persists(tmp_path):
+    """REQ-REG-B07/F10: set_status writes the new status and refreshes updated_at."""
+    repo = _sqlite_repo(tmp_path)
+    try:
+        record = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+        later = "2099-01-01T00:00:00.000000Z"
+        updated = repo.set_status(record["id"], "cancelled", later)
+        assert updated["status"] == "cancelled"
+        assert updated["updated_at"] == later
+        assert repo.get(record["id"])["status"] == "cancelled"
+    finally:
+        repo.close()
+
+
+def test_sqlite_set_status_missing_returns_none(tmp_path):
+    """REQ-REG-B07: setting the status of an unknown id returns None."""
+    repo = _sqlite_repo(tmp_path)
+    try:
+        assert repo.set_status("does-not-exist", "cancelled", utcnow_iso()) is None
+    finally:
+        repo.close()
+
+
+def test_sqlite_delete_removes_record(tmp_path):
+    """REQ-REG-F07: deleting an existing registration returns True and removes it."""
+    repo = _sqlite_repo(tmp_path)
+    try:
+        record = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+        assert repo.delete(record["id"]) is True
+        assert repo.get(record["id"]) is None
+    finally:
+        repo.close()
+
+
+def test_sqlite_delete_missing_reports_false(tmp_path):
+    """REQ-REG-F07: deleting an unknown id returns False."""
+    repo = _sqlite_repo(tmp_path)
+    try:
+        assert repo.delete("does-not-exist") is False
+    finally:
+        repo.close()
+
+
+def test_sqlite_count_confirmed_counts_only_confirmed(tmp_path):
+    """REQ-REG-B08: count_confirmed counts only confirmed records for the event."""
+    repo = _sqlite_repo(tmp_path)
+    try:
+        a = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+        repo.create_if_allowed(USER_B, EVENT_X, capacity=10, make_record=_maker(USER_B, EVENT_X))
+        repo.create_if_allowed(USER_A, EVENT_Y, capacity=10, make_record=_maker(USER_A, EVENT_Y))
+        repo.set_status(a["id"], "cancelled", utcnow_iso())
+        assert repo.count_confirmed(EVENT_X) == 1
+        assert repo.count_confirmed(EVENT_Y) == 1
+    finally:
+        repo.close()
+
+
+def test_sqlite_count_confirmed_unknown_event_is_zero(tmp_path):
+    """REQ-REG-B08: an event with no registrations has zero confirmed."""
+    repo = _sqlite_repo(tmp_path)
+    try:
+        assert repo.count_confirmed("no-such-event") == 0
+    finally:
+        repo.close()
+
+
+def test_sqlite_data_persists_across_reopen(tmp_path):
+    """REQ-REG-F13-AC3: data written by one instance survives reopening the DB."""
+    path = tmp_path / "registrations.db"
+    repo = SqliteRegistrationRepository(path)
+    try:
+        created = repo.create_if_allowed(USER_A, EVENT_X, capacity=10, make_record=_maker(USER_A, EVENT_X))
+        repo.set_status(created["id"], "cancelled", "2099-01-01T00:00:00.000000Z")
+    finally:
+        repo.close()
+
+    # Reopen a fresh instance against the same file — state must be restored.
+    reopened = SqliteRegistrationRepository(path)
+    try:
+        restored = reopened.get(created["id"])
+        assert restored is not None
+        assert restored["id"] == created["id"]
+        assert restored["status"] == "cancelled"
+        assert restored["updated_at"] == "2099-01-01T00:00:00.000000Z"
+        assert len(reopened.list_all({})) == 1
+    finally:
+        reopened.close()
+
+
+def test_sqlite_concurrent_create_capacity_one_admits_exactly_one(tmp_path):
+    """REQ-REG-B05-AC5 / design §5: capacity 1, many concurrent creates → one wins."""
+    repo = _sqlite_repo(tmp_path)
+    try:
+        users = [f"{i:08d}-0000-4000-8000-000000000000" for i in range(20)]
+        successes: list[dict] = []
+        fulls: list[Exception] = []
+        guard = threading.Lock()
+
+        def worker(user_id: str) -> None:
+            try:
+                record = repo.create_if_allowed(
+                    user_id, EVENT_X, capacity=1, make_record=_maker(user_id, EVENT_X)
+                )
+                with guard:
+                    successes.append(record)
+            except EventFullError as exc:
+                with guard:
+                    fulls.append(exc)
+
+        threads = [threading.Thread(target=worker, args=(u,)) for u in users]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert len(successes) == 1
+        assert len(fulls) == 19
+        assert repo.count_confirmed(EVENT_X) == 1
+    finally:
+        repo.close()
+
+
+def test_sqlite_concurrent_same_user_admits_exactly_one_confirmed(tmp_path):
+    """REQ-REG-B04-AC3 / design §5: same user, many concurrent creates → one confirmed.
+
+    Exercises both the in-process lock and the partial unique index safety net.
+    """
+    repo = _sqlite_repo(tmp_path)
+    try:
+        successes: list[dict] = []
+        dups: list[Exception] = []
+        guard = threading.Lock()
+
+        def worker() -> None:
+            try:
+                record = repo.create_if_allowed(
+                    USER_A, EVENT_X, capacity=100, make_record=_maker(USER_A, EVENT_X)
+                )
+                with guard:
+                    successes.append(record)
+            except AlreadyRegisteredError as exc:
+                with guard:
+                    dups.append(exc)
+
+        threads = [threading.Thread(target=worker) for _ in range(20)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert len(successes) == 1
+        assert len(dups) == 19
+        assert repo.count_confirmed(EVENT_X) == 1
+    finally:
+        repo.close()
